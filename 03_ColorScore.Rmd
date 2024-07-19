@@ -1258,7 +1258,7 @@ ColorData$Season[which(ColorData$TimeP=="M4")]<-"Winter"
 ColorData$Season[which(ColorData$TimeP=="M8")]<-"Spring"
 
 ##Write out
-write.csv(ColorData, "Outputs/ColorData.csv", row.names=FALSE)
+write.csv(ColorData, "Outputs/ScoreData.csv", row.names=FALSE)
 
 ```
 
