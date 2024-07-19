@@ -1,0 +1,50 @@
+---
+title: "Thermal Tolerance with Color Score and Bleaching Metrics"
+author: "Serena Hackerott and Lauren Gregory"
+date: "7/19/2024"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+# Setup
+```{r Setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+### Load Packages
+```{r}
+##Install Packages if Needed
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("effectsize")) install.packages("effectsize")
+if (!require("emmeans")) install.packages("emmeans")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("tidyr")) install.packages("tidyr")
+if (!require("Rmisc")) install.packages("Rmisc")
+if (!require("ggpubr")) install.packages("ggpubr")
+if (!require("cowplot")) install.packages("cowplot")
+if (!require("gridGraphics")) install.packages("gridGraphics")
+if (!require("tidyr")) install.packages("tidyr")
+
+##Load Packages
+library(ggplot2) #Required for plotting
+library(effectsize) #Required for eta_squared effect sizes
+library(emmeans) #Required for pairwise comparisons
+library(dplyr) #Required to seperate columns in dataframe
+library(tidyr) #Required for data organization
+library(Rmisc) #Required for summarySE for summary statistics
+library(ggpubr) #Required for adding pairwise p-values to plots with stat_pvalue_manual 
+library(cowplot) #Required for arranging ggplots 
+library(gridGraphics) #Required for adding labels to arranged plots
+library(tidyr) #Required for reshaping datafrom from a wide to long format.
+```
+Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
+
+
+### Load and Organize Data
+Note: Full Data with Bleaching Metrics and Color Score created in 04_Models.R file

@@ -1,0 +1,78 @@
+---
+title: "Experimental Design and Thermal stress assay"
+author: "Serena Hackerott"
+date: "7/19/2024"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+# Setup
+
+```{r Setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+### Load Packages
+```{r}
+##Install Packages if Needed
+if (!require("viridis")) install.packages("viridis")
+if (!require("scales")) install.packages("scales")
+if (!require("ggplot2")) install.packages("ggplot2")
+
+##Load Packages
+library(viridis)
+library(scales)
+library(ggplot2)
+```
+
+
+### Graphing Parameters
+```{r Graphing Parameters}
+
+##Colors by Groups
+
+##Heat Assay Treatments
+show_col(viridis_pal(option = "turbo")(25))
+HC.colors.o<-c("#3BA0FDFF", "#BA1E02FF")
+#Heat Assay Treatments: Control, Heated
+
+
+##Genotype Colors
+Geno.colors.o<-c("coral","lightskyblue","mediumpurple3")
+#Genotypes: AC10, AC12, AC8
+
+
+##Plot Feature Sizes
+axis.title.sz=17
+axis.txt.sz=14
+leg.title.sz=20
+leg.txt.sz=18
+levels.sz=7
+sig.sz=5
+panel.lab.sz=25
+point.sz=4
+bar.sz=1
+cap.sz=0.3
+plot.title.sz=24
+```
+
+
+# Experimental Design
+
+### Load and Organize Data
+```{r}
+
+```
+
+
+# Acute Thermal Tolerance Assay
+```{r}
+
+```
+

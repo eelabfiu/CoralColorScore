@@ -1,0 +1,59 @@
+---
+title: "Calculation of Color Score"
+author: "Serena Hackerott and Lauren Gregory"
+date: "7/19/2024"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+# Setup
+```{r Setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+### Load Packages
+```{r}
+##Install Packages if Needed
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("vegan")) install.packages("vegan")
+if (!require("FactoMineR")) install.packages("FactoMineR")
+if (!require("factoextra")) install.packages("factoextra")
+
+##Load Packages
+library("ggplot2")
+library("vegan")
+library("FactoMineR")
+library("factoextra")
+```
+Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
+
+
+### Load and Organize Data
+```{r}
+##Load Data
+Color<-read.csv("Data/Color.csv", header=TRUE)
+SampData<-read.csv("Data/SampleData.csv", header=TRUE)
+
+##Set factor variables
+SampData$TimeP<-factor(SampData$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+SampData$Site<-factor(SampData$Site, levels=c("KL", "SS"), ordered=TRUE)
+SampData$Genotype<-factor(SampData$Genotype, levels=c("AC8", "AC10", "AC12"), ordered=TRUE)
+SampData$Treatment<-factor(SampData$Treatment, levels=c("Control", "Heat"), ordered=TRUE)
+SampData$Treat<-factor(SampData$Treat, levels=c("C", "H"), ordered=TRUE)
+
+##Add a Sample Set Variable
+SampData$Set<-paste(SampData$TimeP, SampData$Site, SampData$Genotype, SampData$Treat, sep=".")
+
+##Set rownames to ID
+rownames(SampData)<-SampData$ID
+rownames(Color)<-Color$ID
+```
+
+
+# Calculate Color Score

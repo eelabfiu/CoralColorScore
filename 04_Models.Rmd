@@ -1,0 +1,40 @@
+---
+title: "Relationship between Color Score and Bleaching Metrics"
+author: "Serena Hackerott and Lauren Gregory"
+date: "7/19/2024"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+# Setup
+```{r Setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+### Load Packages
+```{r}
+##Install Packages if Needed
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("effectsize")) install.packages("effectsize")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("ggeffects")) install.packages("ggeffects")
+if (!require("cowplot")) install.packages("cowplot")
+
+##Load Packages
+library(ggplot2) #Required for plotting
+library(effectsize) #Required to eta_squared effect sizes
+library(dplyr) #Required for dataframe cleanup
+library(ggeffects) #Required for ggpredict to plot model results
+library(cowplot) #Required for arranging ggplots 
+```
+Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
+
+
+### Load and Organize Data
+Note: ScoreData created in 03_ColorScore.R file
