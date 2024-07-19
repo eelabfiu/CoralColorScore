@@ -37,4 +37,135 @@ Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
 
 ### Load and Organize Data
-Note: ScoreData created in 03_ColorScore.R file
+Note: BleachData was created in 02_BleachingMetrics.Rmd and ScoreData was created in 03_ColorScore.Rmd file
+```{r}
+#Load Data
+ScoreData<-read.csv("Outputs/ScoreData.csv", header=TRUE)
+BleachData<-read.csv("Outputs/BleachData.csv", header=TRUE)
+
+##Combine Bleaching and Color Score Data
+FullData<-merge(ScoreData, BleachData, all.x=TRUE)
+
+##Set factor variables 
+FullData$TimeP<-factor(FullData$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+FullData$Site<-factor(FullData$Site, levels=c("KL", "SS"), ordered=TRUE)
+FullData$Genotype<-factor(FullData$Genotype, levels=c("AC8", "AC10", "AC12"), ordered=TRUE)
+FullData$Treatment<-factor(FullData$Treatment, levels=c("Control", "Heat"), ordered=TRUE)
+FullData$Treat<-factor(FullData$Treat, levels=c("C", "H"), ordered=TRUE)
+FullData$AnSet<-factor(FullData$AnSet, levels=c("Initial", "Seasonal", "Annual"), ordered=TRUE)
+FullData$Season<-factor(FullData$Season, levels=c("Summer", "Winter", "Spring"), ordered=TRUE)
+```
+
+
+# Model Development
+Biologically, traditional bleaching metrics (chlorophyll, symbiont density) should act as a predictor and color score would be the response. However to test the hypothesis if color score can be used to predict traditional bleaching metrics and to make this model more accessible to coral restoration facilities, color score will be modeled as the predictor (independent, x variable) with traditional metrics as the response (dependent, y variable).
+
+
+### Checking Normality
+
+```{r}
+##Chlorophyll
+hist(FullData$Chl_ug.cm2)
+shapiro.test(FullData$Chl_ug.cm2)
+# Not Normal
+
+#Natural log transformation 
+hist(log(FullData$Chl_ug.cm2))
+shapiro.test(log(FullData$Chl_ug.cm2))
+# Not Normal
+
+#Square root transformation 
+hist(sqrt(FullData$Chl_ug.cm2))
+shapiro.test(sqrt(FullData$Chl_ug.cm2))
+# Not Normal
+
+```
+
+
+```{r}
+##Symbionts
+hist(FullData$Sym10.6_cm2)
+shapiro.test(FullData$Sym10.6_cm2)
+# Not Normal
+
+#Natural log transformation 
+hist(log(FullData$Sym10.6_cm2))
+shapiro.test(log(FullData$Sym10.6_cm2))
+# Not Normal
+
+#Square root transformation 
+hist(sqrt(FullData$Sym10.6_cm2))
+shapiro.test(sqrt(FullData$Sym10.6_cm2))
+# Not Normal
+
+```
+
+
+```{r}
+##Color Score with Full Dataset
+hist(FullData$Score_Full)
+shapiro.test(FullData$Score_Full)
+# Not Normal
+
+#Square transformation 
+hist((FullData$Score_Full)^2)
+shapiro.test((FullData$Score_Full)^2)
+# Not Normal
+
+```
+
+
+```{r}
+##Color Score by Timepoints
+hist(FullData$Score_TP)
+shapiro.test(FullData$Score_TP)
+# Not Normal
+
+#Square transformation 
+hist((FullData$Score_TP)^2)
+shapiro.test((FullData$Score_TP)^2)
+# Not Normal
+
+```
+
+
+```{r}
+##Color Score by Set
+hist(FullData$Score_Set)
+shapiro.test(FullData$Score_Set)
+# Not Normal
+
+#Square transformation 
+hist((FullData$Score_Set)^2)
+shapiro.test((FullData$Score_Set)^2)
+# Not Normal
+
+```
+
+
+```{r}
+##Color Score by Season
+hist(FullData$Score_Seas)
+shapiro.test(FullData$Score_Seas)
+# Not Normal
+
+#Square transformation 
+hist((FullData$Score_Seas)^2)
+shapiro.test((FullData$Score_Seas)^2)
+# Not Normal
+
+```
+
+
+None of the variables are normally distributed. 
+
+
+### Checking Correlation
+
+```{r}
+names(FullData)
+
+chart.Correlation(FullData[,c(9:12,16:17)], histogram=TRUE, method="spearman")
+
+```
+
