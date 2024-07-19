@@ -24,12 +24,14 @@ if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("vegan")) install.packages("vegan")
 if (!require("FactoMineR")) install.packages("FactoMineR")
 if (!require("factoextra")) install.packages("factoextra")
+if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics")
 
 ##Load Packages
 library("ggplot2")
 library("vegan")
 library("FactoMineR")
 library("factoextra")
+library("PerformanceAnalytics")
 ```
 Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
@@ -53,7 +55,1210 @@ SampData$Set<-paste(SampData$TimeP, SampData$Site, SampData$Genotype, SampData$T
 ##Set rownames to ID
 rownames(SampData)<-SampData$ID
 rownames(Color)<-Color$ID
+
+##Merge Color data with Sample Meta Data
+Color<-merge(Color, SampData, all.x=TRUE, all.y=FALSE)
+
+##Add an Analysis Set Variable
+Color$AnSet<-"Initial"
+Color$AnSet[which(Color$TimeP=="M4" | Color$TimeP== "M8")]<-"Seasonal"
+Color$AnSet[which(Color$TimeP=="M12")]<-"Annual"
+
+##Add Season Variable
+Color$Season<-"Summer"
+Color$Season[which(Color$TimeP=="M4")]<-"Winter"
+Color$Season[which(Color$TimeP=="M8")]<-"Spring"
+
 ```
 
 
 # Calculate Color Score
+
+### Standardize Colors
+Standardize RGB colors by dividing Coral color by color standards. 
+```{r}
+Color$Red.Norm.Coral <- Color$Red.Coral/Color$Red.Standard
+Color$Green.Norm.Coral <- Color$Green.Coral/Color$Green.Standard
+Color$Blue.Norm.Coral <- Color$Blue.Coral/Color$Blue.Standard
+
+```
+
+## Full Dataset
+
+### Distance Matrix
+```{r}
+#Create matrix of standardized colors
+Color.mat <- as.matrix(cbind(Color$Red.Norm.Coral,Color$Green.Norm.Coral,Color$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color.mat) <- Color$ID
+
+#Create a Distance Matrix for PCA
+Color.dist <- vegdist(Color.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+### PCA
+```{r}
+#Run Principal Components Analysis
+Color.PCA <- princomp(Color.dist) 
+
+#Initial plot
+fviz_pca_ind(Color.PCA)
+
+#Check Variance Explained by Components
+summary(Color.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 79.7% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1<-sprintf("%1.2f",0.7965234*100)
+PC1
+
+#% Variance PCA 2
+PC2<-sprintf("%1.2f",0.1818749*100)
+PC2
+
+#Prepare for Plotting
+Color.PCA_scores <- as.data.frame(Color.PCA$scores[,c(1:2)])
+Color.PCA_scores$ID<-rownames(Color.PCA_scores)
+Color.PCA_scores<-merge(Color.PCA_scores, SampData)
+
+#Plot PCA
+Color.PCA.plot<-ggplot(data = Color.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1,"%)"), y=paste0('PC 2 (',PC2,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score (explains 79.7% of the variance in the color data). Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+### Extract Color Score
+```{r}
+##Retain Metadata columns of interest
+names(Color.PCA_scores)
+ColorData<-Color.PCA_scores[,c(1,4:9,13)]
+
+##Retain PC1 as Color Score
+ColorData$Score_Full<-Color.PCA_scores$Comp.1
+
+##Initial Visual Check
+ggplot(ColorData, aes(x=Set, y=Score_Full)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Invert signs for Control > Heated
+ColorData$Score_Full<-ColorData$Score_Full*(-1)
+
+#Adding 20 to make all score values positive 
+ColorData$Score_Full<- ColorData$Score_Full +20
+
+##Initial Visual Check
+ggplot(ColorData, aes(x=Set, y=Score_Full)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Plot by Treatment
+ggplot(ColorData, aes(x=Treatment, y=Score_Full)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+
+## By Timepoint
+Repeat the calculation of Color Score for each Timepoint individually
+
+## W1
+
+#### Distance Matrix
+```{r}
+#Subset W1 Timepoint
+Color_W1<-subset(Color, TimeP=="W1")
+
+#Create matrix of standardized colors
+Color_W1.mat <- as.matrix(cbind(Color_W1$Red.Norm.Coral,Color_W1$Green.Norm.Coral,Color_W1$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_W1.mat) <- Color_W1$ID
+
+#Create a Distance Matrix for PCA
+Color_W1.dist <- vegdist(Color_W1.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_W1.PCA <- princomp(Color_W1.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_W1.PCA)
+
+#Check Variance Explained by Components
+summary(Color_W1.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_W1.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 79.2% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_W1<-sprintf("%1.2f",0.7922463*100)
+PC1_W1
+
+#% Variance PCA 2
+PC2_W1<-sprintf("%1.2f",0.1793451*100)
+PC2_W1
+
+#Prepare for Plotting
+Color_W1.PCA_scores <- as.data.frame(Color_W1.PCA$scores[,c(1:2)])
+Color_W1.PCA_scores$ID<-rownames(Color_W1.PCA_scores)
+Color_W1.PCA_scores<-merge(Color_W1.PCA_scores, SampData)
+
+#Plot PCA
+Color_W1.PCA.plot<-ggplot(data = Color_W1.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_W1.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_W1,"%)"), y=paste0('PC 2 (',PC2_W1,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_W1.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## W2
+
+#### Distance Matrix
+```{r}
+#Subset W2 Timepoint
+Color_W2<-subset(Color, TimeP=="W2")
+
+#Create matrix of standardized colors
+Color_W2.mat <- as.matrix(cbind(Color_W2$Red.Norm.Coral,Color_W2$Green.Norm.Coral,Color_W2$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_W2.mat) <- Color_W2$ID
+
+#Create a Distance Matrix for PCA
+Color_W2.dist <- vegdist(Color_W2.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_W2.PCA <- princomp(Color_W2.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_W2.PCA)
+
+#Check Variance Explained by Components
+summary(Color_W2.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_W2.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 79% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_W2<-sprintf("%1.2f",0.7899334*100)
+PC1_W2
+
+#% Variance PCA 2
+PC2_W2<-sprintf("%1.2f",0.1854891*100)
+PC2_W2
+
+#Prepare for Plotting
+Color_W2.PCA_scores <- as.data.frame(Color_W2.PCA$scores[,c(1:2)])
+Color_W2.PCA_scores$ID<-rownames(Color_W2.PCA_scores)
+Color_W2.PCA_scores<-merge(Color_W2.PCA_scores, SampData)
+
+#Plot PCA
+Color_W2.PCA.plot<-ggplot(data = Color_W2.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_W2.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_W2,"%)"), y=paste0('PC 2 (',PC2_W2,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_W2.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## M1
+
+#### Distance Matrix
+```{r}
+#Subset M1 Timepoint
+Color_M1<-subset(Color, TimeP=="M1")
+
+#Create matrix of standardized colors
+Color_M1.mat <- as.matrix(cbind(Color_M1$Red.Norm.Coral,Color_M1$Green.Norm.Coral,Color_M1$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_M1.mat) <- Color_M1$ID
+
+#Create a Distance Matrix for PCA
+Color_M1.dist <- vegdist(Color_M1.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_M1.PCA <- princomp(Color_M1.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_M1.PCA)
+
+#Check Variance Explained by Components
+summary(Color_M1.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_M1.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 84.8% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_M1<-sprintf("%1.2f",0.8482496 *100)
+PC1_M1
+
+#% Variance PCA 2
+PC2_M1<-sprintf("%1.2f",0.1311346 *100)
+PC2_M1
+
+#Prepare for Plotting
+Color_M1.PCA_scores <- as.data.frame(Color_M1.PCA$scores[,c(1:2)])
+Color_M1.PCA_scores$ID<-rownames(Color_M1.PCA_scores)
+Color_M1.PCA_scores<-merge(Color_M1.PCA_scores, SampData)
+
+#Plot PCA
+Color_M1.PCA.plot<-ggplot(data = Color_M1.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_M1.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_M1,"%)"), y=paste0('PC 2 (',PC2_M1,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_M1.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## M4
+
+#### Distance Matrix
+```{r}
+#Subset M4 Timepoint
+Color_M4<-subset(Color, TimeP=="M4")
+
+#Create matrix of standardized colors
+Color_M4.mat <- as.matrix(cbind(Color_M4$Red.Norm.Coral,Color_M4$Green.Norm.Coral,Color_M4$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_M4.mat) <- Color_M4$ID
+
+#Create a Distance Matrix for PCA
+Color_M4.dist <- vegdist(Color_M4.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_M4.PCA <- princomp(Color_M4.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_M4.PCA)
+
+#Check Variance Explained by Components
+summary(Color_M4.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_M4.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 73.4% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_M4<-sprintf("%1.2f",0.7338452 *100)
+PC1_M4
+
+#% Variance PCA 2
+PC2_M4<-sprintf("%1.2f",0.2385715*100)
+PC2_M4
+
+#Prepare for Plotting
+Color_M4.PCA_scores <- as.data.frame(Color_M4.PCA$scores[,c(1:2)])
+Color_M4.PCA_scores$ID<-rownames(Color_M4.PCA_scores)
+Color_M4.PCA_scores<-merge(Color_M4.PCA_scores, SampData)
+
+#Plot PCA
+Color_M4.PCA.plot<-ggplot(data = Color_M4.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_M4.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_M4,"%)"), y=paste0('PC 2 (',PC2_M4,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_M4.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. *Note: These coordinates should not be multiplied by -1 for intuitive interpretation (Control > Heated), but will still be made positive by adding 20
+
+
+## M8
+
+#### Distance Matrix
+```{r}
+#Subset W1 Timepoint
+Color_M8<-subset(Color, TimeP=="M8")
+
+#Create matrix of standardized colors
+Color_M8.mat <- as.matrix(cbind(Color_M8$Red.Norm.Coral,Color_M8$Green.Norm.Coral,Color_M8$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_M8.mat) <- Color_M8$ID
+
+#Create a Distance Matrix for PCA
+Color_M8.dist <- vegdist(Color_M8.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_M8.PCA <- princomp(Color_M8.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_M8.PCA)
+
+#Check Variance Explained by Components
+summary(Color_M8.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_M8.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 75.7% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_M8<-sprintf("%1.2f",0.7569193*100)
+PC1_M8
+
+#% Variance PCA 2
+PC2_M8<-sprintf("%1.2f",0.2166915 *100)
+PC2_M8
+
+#Prepare for Plotting
+Color_M8.PCA_scores <- as.data.frame(Color_M8.PCA$scores[,c(1:2)])
+Color_M8.PCA_scores$ID<-rownames(Color_M8.PCA_scores)
+Color_M8.PCA_scores<-merge(Color_M8.PCA_scores, SampData)
+
+#Plot PCA
+Color_M8.PCA.plot<-ggplot(data = Color_M8.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_M8.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_M8,"%)"), y=paste0('PC 2 (',PC2_M8,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_M8.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment, but less separation between Heated vs Control. Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## M12
+
+#### Distance Matrix
+```{r}
+#Subset M12 Timepoint
+Color_M12<-subset(Color, TimeP=="M12")
+
+#Create matrix of standardized colors
+Color_M12.mat <- as.matrix(cbind(Color_M12$Red.Norm.Coral,Color_M12$Green.Norm.Coral,Color_M12$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_M12.mat) <- Color_M12$ID
+
+#Create a Distance Matrix for PCA
+Color_M12.dist <- vegdist(Color_M12.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_M12.PCA <- princomp(Color_M12.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_M12.PCA)
+
+#Check Variance Explained by Components
+summary(Color_M12.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_M12.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 79.5% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_M12<-sprintf("%1.2f",0.7953724*100)
+PC1_M12
+
+#% Variance PCA 2
+PC2_M12<-sprintf("%1.2f",0.1758750*100)
+PC2_M12
+
+#Prepare for Plotting
+Color_M12.PCA_scores <- as.data.frame(Color_M12.PCA$scores[,c(1:2)])
+Color_M12.PCA_scores$ID<-rownames(Color_M12.PCA_scores)
+Color_M12.PCA_scores<-merge(Color_M12.PCA_scores, SampData)
+
+#Plot PCA
+Color_M12.PCA.plot<-ggplot(data = Color_M12.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_M12.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_M12,"%)"), y=paste0('PC 2 (',PC2_M12,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_M12.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## Extract Color Scores
+```{r}
+##Combine results from individual timepoints
+ColorData.TP<-rbind(Color_W1.PCA_scores, Color_W2.PCA_scores, 
+                    Color_M1.PCA_scores, Color_M4.PCA_scores,
+                    Color_M8.PCA_scores, Color_M12.PCA_scores)
+
+##Retain PC1 as Color Score
+ColorData.TP$Score_TP<-ColorData.TP$Comp.1
+
+##Invert signs for Control > Heated for all except M4
+ColorData.TP$Score_TP[-c(which(ColorData.TP$TimeP=="M4"))]<-ColorData.TP$Score_TP[-c(which(ColorData.TP$TimeP=="M4"))]*(-1)
+
+#Adding 20 to make all score values positive 
+ColorData.TP$Score_TP<- ColorData.TP$Score_TP +20
+
+##Initial Visual Check
+ggplot(ColorData.TP, aes(x=Set, y=Score_TP)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Plot by Treatment
+ggplot(ColorData.TP, aes(x=Treatment, y=Score_TP)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Merge with Color Data
+names(ColorData.TP)
+ColorData<-merge(ColorData, ColorData.TP[,c(1,14)])
+```
+
+
+
+
+
+## By Analysis Set
+Repeat the calculation of Color Score for each Analysis Set. Initial: W1, W2, and M1 all from Aug 2022. Seasonal: M4 and M8 from Dec 2022 and Mar 2023. Annual: M12 from Aug 2023. 
+
+## Initial
+
+#### Distance Matrix
+```{r}
+#Subset Initial Set
+Color_IN<-subset(Color, AnSet=="Initial")
+
+#Create matrix of standardized colors
+Color_IN.mat <- as.matrix(cbind(Color_IN$Red.Norm.Coral,Color_IN$Green.Norm.Coral,Color_IN$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_IN.mat) <- Color_IN$ID
+
+#Create a Distance Matrix for PCA
+Color_IN.dist <- vegdist(Color_IN.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_IN.PCA <- princomp(Color_IN.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_IN.PCA)
+
+#Check Variance Explained by Components
+summary(Color_IN.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_IN.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 77% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_IN<-sprintf("%1.2f",0.7700304 *100)
+PC1_IN
+
+#% Variance PCA 2
+PC2_IN<-sprintf("%1.2f",0.2064531 *100)
+PC2_IN
+
+#Prepare for Plotting
+Color_IN.PCA_scores <- as.data.frame(Color_IN.PCA$scores[,c(1:2)])
+Color_IN.PCA_scores$ID<-rownames(Color_IN.PCA_scores)
+Color_IN.PCA_scores<-merge(Color_IN.PCA_scores, SampData)
+
+#Plot PCA
+Color_IN.PCA.plot<-ggplot(data = Color_IN.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_IN.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_IN,"%)"), y=paste0('PC 2 (',PC2_IN,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_IN.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## Seasonal
+
+#### Distance Matrix
+```{r}
+#Subset Seasonal Set
+Color_SE<-subset(Color, AnSet=="Seasonal")
+
+#Create matrix of standardized colors
+Color_SE.mat <- as.matrix(cbind(Color_SE$Red.Norm.Coral,Color_SE$Green.Norm.Coral,Color_SE$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_SE.mat) <- Color_SE$ID
+
+#Create a Distance Matrix for PCA
+Color_SE.dist <- vegdist(Color_SE.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_SE.PCA <- princomp(Color_SE.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_SE.PCA)
+
+#Check Variance Explained by Components
+summary(Color_SE.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_SE.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 70.8% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_SE<-sprintf("%1.2f",0.7083081  *100)
+PC1_SE
+
+#% Variance PCA 2
+PC2_SE<-sprintf("%1.2f",0.2668212  *100)
+PC2_SE
+
+#Prepare for Plotting
+Color_SE.PCA_scores <- as.data.frame(Color_SE.PCA$scores[,c(1:2)])
+Color_SE.PCA_scores$ID<-rownames(Color_SE.PCA_scores)
+Color_SE.PCA_scores<-merge(Color_SE.PCA_scores, SampData)
+
+#Plot PCA
+Color_SE.PCA.plot<-ggplot(data = Color_SE.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_SE.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_SE,"%)"), y=paste0('PC 2 (',PC2_SE,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_SE.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment, but less split between Heated vs Control. Coordinates along PC1 will be extracted as the Color Score. *Note: These coordinates should not be multiplied by -1 for intuitive interpretation (Control > Heated), but will still be made positive by adding 20
+
+
+
+## Annual
+
+#### Distance Matrix
+```{r}
+#Subset Annual Set
+Color_AN<-subset(Color, AnSet=="Annual")
+
+#Create matrix of standardized colors
+Color_AN.mat <- as.matrix(cbind(Color_AN$Red.Norm.Coral,Color_AN$Green.Norm.Coral,Color_AN$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_AN.mat) <- Color_AN$ID
+
+#Create a Distance Matrix for PCA
+Color_AN.dist <- vegdist(Color_AN.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_AN.PCA <- princomp(Color_AN.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_AN.PCA)
+
+#Check Variance Explained by Components
+summary(Color_AN.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_AN.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 79.5% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_AN<-sprintf("%1.2f",0.7953724  *100)
+PC1_AN
+
+#% Variance PCA 2
+PC2_AN<-sprintf("%1.2f",0.1758750  *100)
+PC2_AN
+
+#Prepare for Plotting
+Color_AN.PCA_scores <- as.data.frame(Color_AN.PCA$scores[,c(1:2)])
+Color_AN.PCA_scores$ID<-rownames(Color_AN.PCA_scores)
+Color_AN.PCA_scores<-merge(Color_AN.PCA_scores, SampData)
+
+#Plot PCA
+Color_AN.PCA.plot<-ggplot(data = Color_AN.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_AN.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_AN,"%)"), y=paste0('PC 2 (',PC2_AN,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_AN.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## Extract Color Scores
+```{r}
+##Combine results from individual timepoints
+ColorData.Set<-rbind(Color_IN.PCA_scores, Color_SE.PCA_scores, 
+                    Color_AN.PCA_scores)
+
+##Retain PC1 as Color Score
+ColorData.Set$Score_Set<-ColorData.Set$Comp.1
+
+##Add an Analysis Set Variable
+ColorData.Set$AnSet<-"Initial"
+ColorData.Set$AnSet[which(ColorData.Set$TimeP=="M4" | ColorData.Set$TimeP== "M8")]<-"Seasonal"
+ColorData.Set$AnSet[which(ColorData.Set$TimeP=="M12")]<-"Annual"
+
+##Invert signs for Control > Heated for all except Seasonal
+ColorData.Set$Score_Set[-c(which(ColorData.Set$AnSet=="Seasonal"))]<-ColorData.Set$Score_Set[-c(which(ColorData.Set$AnSet=="Seasonal"))]*(-1)
+
+#Adding 20 to make all score values positive 
+ColorData.Set$Score_Set<- ColorData.Set$Score_Set +20
+
+##Initial Visual Check
+ggplot(ColorData.Set, aes(x=Set, y=Score_Set)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Plot by Treatment
+ggplot(ColorData.Set, aes(x=Treatment, y=Score_Set)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Merge with Color Data
+names(ColorData.Set)
+ColorData<-merge(ColorData, ColorData.Set[,c(1,14)])
+```
+
+
+## By Season
+Repeat the calculation of Color Score for each Season. Summer: W1, W2, and M1 from Aug 2022 plus M12 from Aug 2023. Winter: M4 from Dec 2022. Spring: M8 from Mar 2023.
+
+
+## Summer
+
+#### Distance Matrix
+```{r}
+#Subset Summer Set
+Color_SU<-subset(Color, Season=="Summer")
+
+#Create matrix of standardized colors
+Color_SU.mat <- as.matrix(cbind(Color_SU$Red.Norm.Coral,Color_SU$Green.Norm.Coral,Color_SU$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_SU.mat) <- Color_SU$ID
+
+#Create a Distance Matrix for PCA
+Color_SU.dist <- vegdist(Color_SU.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_SU.PCA <- princomp(Color_SU.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_SU.PCA)
+
+#Check Variance Explained by Components
+summary(Color_SU.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_SU.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 77% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_SU<-sprintf("%1.2f",0.7699187  *100)
+PC1_SU
+
+#% Variance PCA 2
+PC2_SU<-sprintf("%1.2f",0.2064792  *100)
+PC2_SU
+
+#Prepare for Plotting
+Color_SU.PCA_scores <- as.data.frame(Color_SU.PCA$scores[,c(1:2)])
+Color_SU.PCA_scores$ID<-rownames(Color_SU.PCA_scores)
+Color_SU.PCA_scores<-merge(Color_SU.PCA_scores, SampData)
+
+#Plot PCA
+Color_SU.PCA.plot<-ggplot(data = Color_SU.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_SU.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_SU,"%)"), y=paste0('PC 2 (',PC2_SU,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_SU.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## Winter
+
+#### Distance Matrix
+```{r}
+#Subset Winter Set
+Color_WI<-subset(Color, Season=="Winter")
+
+#Create matrix of standardized colors
+Color_WI.mat <- as.matrix(cbind(Color_WI$Red.Norm.Coral,Color_WI$Green.Norm.Coral,Color_WI$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_WI.mat) <- Color_WI$ID
+
+#Create a Distance Matrix for PCA
+Color_WI.dist <- vegdist(Color_WI.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_WI.PCA <- princomp(Color_WI.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_WI.PCA)
+
+#Check Variance Explained by Components
+summary(Color_WI.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_WI.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 73.4% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_WI<-sprintf("%1.2f",0.7338452  *100)
+PC1_WI
+
+#% Variance PCA 2
+PC2_WI<-sprintf("%1.2f",0.2385715  *100)
+PC2_WI
+
+#Prepare for Plotting
+Color_WI.PCA_scores <- as.data.frame(Color_WI.PCA$scores[,c(1:2)])
+Color_WI.PCA_scores$ID<-rownames(Color_WI.PCA_scores)
+Color_WI.PCA_scores<-merge(Color_WI.PCA_scores, SampData)
+
+#Plot PCA
+Color_WI.PCA.plot<-ggplot(data = Color_WI.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_WI.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_WI,"%)"), y=paste0('PC 2 (',PC2_WI,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_WI.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. *Note: These coordinates should not be multiplied by -1 for intuitive interpretation (Control > Heated), but will still be made positive by adding 20
+
+
+## Spring
+
+#### Distance Matrix
+```{r}
+#Subset Spring Set
+Color_SP<-subset(Color, Season=="Spring")
+
+#Create matrix of standardized colors
+Color_SP.mat <- as.matrix(cbind(Color_SP$Red.Norm.Coral,Color_SP$Green.Norm.Coral,Color_SP$Blue.Norm.Coral))
+
+#Set row names to sample ID
+rownames(Color_SP.mat) <- Color_SP$ID
+
+#Create a Distance Matrix for PCA
+Color_SP.dist <- vegdist(Color_SP.mat, method="euclidean", na.rm=TRUE)
+```
+
+
+#### PCA
+```{r}
+#Run Principal Components Analysis
+Color_SP.PCA <- princomp(Color_SP.dist) 
+
+#Initial plot
+fviz_pca_ind(Color_SP.PCA)
+
+#Check Variance Explained by Components
+summary(Color_SP.PCA)
+
+#Visualize the importance of each principal component
+fviz_eig(Color_SP.PCA, addlabels = TRUE) 
+
+```
+
+PC1 Explains 75.7% of the variance in the color data.
+
+
+#### Plot PCA
+```{r}
+
+#% Variance PCA 1
+PC1_SP<-sprintf("%1.2f",0.7569193  *100)
+PC1_SP
+
+#% Variance PCA 2
+PC2_SP<-sprintf("%1.2f",0.2166915  *100)
+PC2_SP
+
+#Prepare for Plotting
+Color_SP.PCA_scores <- as.data.frame(Color_SP.PCA$scores[,c(1:2)])
+Color_SP.PCA_scores$ID<-rownames(Color_SP.PCA_scores)
+Color_SP.PCA_scores<-merge(Color_SP.PCA_scores, SampData)
+
+#Plot PCA
+Color_SP.PCA.plot<-ggplot(data = Color_SP.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
+  geom_point(data = Color_SP.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+  scale_colour_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-6, 12))+
+  scale_y_continuous(limits = c(-9, 9))+
+  labs(x=paste0('PC 1 (',PC1_SP,"%)"), y=paste0('PC 2 (',PC2_SP,"%)"))+
+   theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="top");Color_SP.PCA.plot
+
+```
+
+
+Samples align along PC1 according to Treatment, but less separation between Heated vs Control. Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+
+
+## Extract Color Scores
+```{r}
+##Combine results from individual timepoints
+ColorData.Seas<-rbind(Color_SU.PCA_scores, Color_WI.PCA_scores, 
+                    Color_SP.PCA_scores)
+
+##Retain PC1 as Color Score
+ColorData.Seas$Score_Seas<-ColorData.Seas$Comp.1
+
+##Add Season Variable
+ColorData.Seas$Season<-"Summer"
+ColorData.Seas$Season[which(ColorData.Seas$TimeP=="M4")]<-"Winter"
+ColorData.Seas$Season[which(ColorData.Seas$TimeP=="M8")]<-"Spring"
+
+##Invert signs for Control > Heated for all except Winter
+ColorData.Seas$Score_Seas[-c(which(ColorData.Seas$Season=="Winter"))]<-ColorData.Seas$Score_Seas[-c(which(ColorData.Seas$Season=="Winter"))]*(-1)
+
+#Adding 20 to make all score values positive 
+ColorData.Seas$Score_Seas<- ColorData.Seas$Score_Seas +20
+
+##Initial Visual Check
+ggplot(ColorData.Seas, aes(x=Set, y=Score_Seas)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Plot by Treatment
+ggplot(ColorData.Seas, aes(x=Treatment, y=Score_Seas)) + 
+  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
+  geom_jitter(shape=16, position=position_jitter(0.1))+
+  theme(axis.text.x = element_text(angle = 90))
+
+##Merge with Color Data
+names(ColorData.Seas)
+ColorData<-merge(ColorData, ColorData.Seas[,c(1,14)])
+```
+
+
+# Compare Calculation Sets
+
+### Correlation
+```{r}
+names(ColorData)
+cor(ColorData[,c(9:12)])
+```
+
+
+```{r}
+chart.Correlation(ColorData[,c(9:12)], histogram=TRUE, pch=19)
+```
+
+
+All calculations of Color score between the Full Dataset, Individual PCA's by Timepoints, or either Analysis / Seasonal sets are all highly correlated with each other. 
+
+
+### Write Out Color Score Data
+```{r}
+##Add an Analysis Set Variable
+ColorData$AnSet<-"Initial"
+ColorData$AnSet[which(ColorData$TimeP=="M4" | ColorData$TimeP== "M8")]<-"Seasonal"
+ColorData$AnSet[which(ColorData$TimeP=="M12")]<-"Annual"
+
+##Add Season Variable
+ColorData$Season<-"Summer"
+ColorData$Season[which(ColorData$TimeP=="M4")]<-"Winter"
+ColorData$Season[which(ColorData$TimeP=="M8")]<-"Spring"
+
+##Write out
+write.csv(ColorData, "Outputs/ColorData.csv", row.names=FALSE)
+
+```
+
