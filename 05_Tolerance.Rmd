@@ -47,4 +47,60 @@ Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
 
 ### Load and Organize Data
-Note: Full Data with Bleaching Metrics and Color Score created in 04_Models.R file
+Note: Full Data with Bleaching Metrics and Color Scores created in 04_Models.R file
+```{r}
+#Load Data
+FullData<-read.csv("Outputs/FullData.csv", header=TRUE)
+
+
+#Set factor variables 
+FullData$TimeP<-factor(FullData$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+FullData$Site<-factor(FullData$Site, levels=c("KL", "SS"), ordered=TRUE)
+FullData$Genotype<-factor(FullData$Genotype, levels=c("AC10", "AC12", "AC8"), ordered=TRUE)
+FullData$Treatment<-factor(FullData$Treatment, levels=c("Control", "Heat"), ordered=TRUE)
+FullData$Treat<-factor(FullData$Treat, levels=c("C", "H"), ordered=TRUE)
+
+```
+
+
+# Percent Retention
+
+### Subset Thermal Assay Data by Treatment
+```{r}
+##Control
+FullData_C<-subset(FullData, Treat=="C")
+
+##Heated
+FullData_H<-subset(FullData, Treat=="H")
+```
+
+
+### Calculate Percent Retention
+Calculating retention as proportion remaining relative to corresponding control levels (0-1) for each site and genotype at each timepoint.
+```{r}
+##Calculate averages for Control Treatment for each Site, Genotype, and Timepoint 
+names(FullData_C)
+FullData_C.a<-aggregate(FullData_C[,c(9:10, 16:17)], list(FullData_C$Site, FullData_C$Genotype, FullData_C$TimeP), mean, na.action = na.omit)
+names(FullData_C.a)[1:3]<-c("Site", "Genotype", "TimeP")
+names(FullData_C.a)[4:7]<-paste(names(FullData_C)[c(9:10, 16:17)], "C", sep="_")
+
+##Merge Control Averages with Heated Samples
+#Merges by Site, Genotype, and Timepoint
+TolData<-merge(FullData_H, FullData_C.a, all.x=TRUE )
+
+##Calculate Proportion Retained for each Bleaching Metric relative to Control
+TolData$Score_Full.prop<-round((TolData$Score_Full/TolData$Score_Full_C), 4)
+TolData$Score_TP.prop<-round((TolData$Score_TP/TolData$Score_TP_C), 4)
+TolData$Chl.prop<-round((TolData$Chl_ug.cm2/TolData$Chl_ug.cm2_C), 4)
+TolData$Sym.prop<-round((TolData$Sym10.6_cm2/TolData$Sym10.6_cm2_C), 4)
+
+##Set values >1 to 1
+TolData$Score_Full.prop[which(TolData$Score_Full.prop>1)]<-1.0000
+TolData$Score_TP.prop[which(TolData$Score_TP.prop>1)]<-1.0000
+TolData$Chl.prop[which(TolData$Chl.prop>1)]<-1.0000
+TolData$Sym.prop[which(TolData$Sym.prop>1)]<-1.0000
+
+##Create Site and Genotype Variable
+TolData$Site.Geno<-paste(TolData$Site, TolData$Genotype, sep="_")
+```
+
