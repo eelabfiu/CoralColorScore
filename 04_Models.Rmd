@@ -372,15 +372,15 @@ summary(Sym_Full.glm.gam.l)
 eta_squared(Sym_Full.glm.gam.l, partial=FALSE)
 
 ##Save model results
-Sym_FUll.glm.res<-data.frame(summary(Sym_Full.glm.gam.l)$coefficients)
-rownames(Sym_FUll.glm.res)[1]<-"Intercept"
-Sym_FUll.glm.res$Predictor<-rownames(Sym_FUll.glm.res)
-Sym_FUll.glm.res$EtaSq<-c(NA,eta_squared(Sym_Full.glm.gam.l, partial=FALSE)$Eta2)
-Sym_FUll.glm.res$Response<-rep("Symbionts", nrow(Sym_FUll.glm.res))
-Sym_FUll.glm.res<-Sym_FUll.glm.res %>% dplyr::rename( p.value = "Pr...t..")
-Sym_FUll.glm.res<-Sym_FUll.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
-Sym_FUll.glm.res$Null.Dev<-c(summary(Sym_Full.glm.gam.l)$null.deviance, summary(Sym_Full.glm.gam.l)$df.null)
-Sym_FUll.glm.res$Resid.Dev<-c(summary(Sym_Full.glm.gam.l)$deviance, summary(Sym_Full.glm.gam.l)$df.residual)
+Sym_Full.glm.res<-data.frame(summary(Sym_Full.glm.gam.l)$coefficients)
+rownames(Sym_Full.glm.res)[1]<-"Intercept"
+Sym_Full.glm.res$Predictor<-rownames(Sym_Full.glm.res)
+Sym_Full.glm.res$EtaSq<-c(NA,eta_squared(Sym_Full.glm.gam.l, partial=FALSE)$Eta2)
+Sym_Full.glm.res$Response<-rep("Symbionts", nrow(Sym_Full.glm.res))
+Sym_Full.glm.res<-Sym_Full.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Sym_Full.glm.res<-Sym_Full.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Sym_Full.glm.res$Null.Dev<-c(summary(Sym_Full.glm.gam.l)$null.deviance, summary(Sym_Full.glm.gam.l)$df.null)
+Sym_Full.glm.res$Resid.Dev<-c(summary(Sym_Full.glm.gam.l)$deviance, summary(Sym_Full.glm.gam.l)$df.residual)
 
 ```
 
@@ -497,6 +497,14 @@ Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TR
 ```
 
 
+# Write Out FullData
+```{r}
+write.csv(FullData, "Outputs/FullData.csv", row.names=FALSE)
+
+```
+
+
+
 # Figures
 
 ```{r}
@@ -510,5 +518,29 @@ Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
 ##Save Figure
 ggsave(filename="Figures/Bleaching_Color_Models.png", plot=Bleach_Color_Models_fig, dpi=300, width=10, height=8, units="in")
  
+```
+
+# Tables
+
+```{r}
+##Combine Results Tables
+TableS1_glm.res<-rbind(Chl_FUll.glm.res, Chl_TP.glm.res, Sym_Full.glm.res, Sym_TP.glm.res)
+
+##Organize
+names(TableS1_glm.res)
+TableS1_Mod.res<-TableS1_glm.res[,c("Response", "Null.Dev" , "Resid.Dev", "Predictor", "Estimate", "Std.Error", "t.value",   "p.value", "EtaSq")]
+TableS1_Mod.res<-TableS1_Mod.res %>% dplyr::rename( SE = Std.Error)
+
+#Round to 4 digits
+TableS1_Mod.res$Null.Dev<-round(TableS1_Mod.res$Null.Dev, 4)
+TableS1_Mod.res$Resid.Dev<-round(TableS1_Mod.res$Resid.Dev, 4)
+TableS1_Mod.res$SE<-round(TableS1_Mod.res$SE, 4)
+TableS1_Mod.res$t.value<-round(TableS1_Mod.res$t.value, 4)
+TableS1_Mod.res$EtaSq<-round(TableS1_Mod.res$EtaSq, 4)
+TableS1_Mod.res$p.value<-round(TableS1_Mod.res$p.value, 4)
+
+##Write Out Table
+write.csv(TableS1_Mod.res, "Tables/TableS1_Metric_Comparison_GLM_Results.csv", row.names=FALSE)
+
 ```
 
