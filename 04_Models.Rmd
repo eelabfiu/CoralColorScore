@@ -25,6 +25,7 @@ if (!require("effectsize")) install.packages("effectsize")
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("ggeffects")) install.packages("ggeffects")
 if (!require("cowplot")) install.packages("cowplot")
+if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics")
 
 ##Load Packages
 library(ggplot2) #Required for plotting
@@ -32,6 +33,7 @@ library(effectsize) #Required to eta_squared effect sizes
 library(dplyr) #Required for dataframe cleanup
 library(ggeffects) #Required for ggpredict to plot model results
 library(cowplot) #Required for arranging ggplots 
+library(PerformanceAnalytics) #Required for correlation matrix
 ```
 Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
@@ -161,11 +163,352 @@ None of the variables are normally distributed.
 
 
 ### Checking Correlation
-
+Checking correlation between each Color Score calculation with traditional bleaching metrics. Using Spearman correlation due to non-normality. 
 ```{r}
 names(FullData)
 
 chart.Correlation(FullData[,c(9:12,16:17)], histogram=TRUE, method="spearman")
 
+```
+
+All metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
+
+For Chlorophyll concentration, Color Score calculated from the Full set has the highest correlation (.78), followed by that calculated from each Timepoint or Season individually (.75), and the lowest correlation (.71) was Color Score calculated for each Analysis set.  
+
+For Symbiont density, Color Score calculated from either each Timepoint individually or each Analysis set had the highest correlations (0.71), followed by that calculated from the Full set (.69), then from each Season (.65).
+
+To avoid issues with different sample sizes across Seasons or Analysis sets, comparing models with either Color Score calculated from the Full dataset or for each Timepoint individually. 
+
+# Model Chlorophyll ~ Color
+
+## Full Set
+
+### Model Selection
+```{r}
+#Compare Model Distributions
+Chl_Full.glm.gaus<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=gaussian(link="identity"))
+Chl_Full.glm.gaus.l<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=gaussian(link="log"))
+Chl_Full.glm.gaus.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=gaussian(link="inverse"))
+
+Chl_Full.glm.gam.l<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=Gamma(link="log"))
+Chl_Full.glm.gam.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=Gamma(link="inverse"))
+
+Chl_Full.glm.inv<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
+Chl_Full.glm.inv.l<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "log"))
+Chl_Full.glm.inv.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "inverse"))
+
+#AIC Model Comparison
+AIC(Chl_Full.glm.gaus, Chl_Full.glm.gaus.l, Chl_Full.glm.gaus.i, Chl_Full.glm.gam.l, Chl_Full.glm.gam.i,  Chl_Full.glm.inv, Chl_Full.glm.inv.l, Chl_Full.glm.inv.i)
+```
+
+Gamma distribution with log link has the best model fit (lowest AIC)
+
+
+### Model Results
+```{r}
+#Model Results
+summary(Chl_Full.glm.gam.l)
+
+#Effect Size of Color Score
+eta_squared(Chl_Full.glm.gam.l, partial=FALSE)
+
+##Save model results
+Chl_FUll.glm.res<-data.frame(summary(Chl_Full.glm.gam.l)$coefficients)
+rownames(Chl_FUll.glm.res)[1]<-"Intercept"
+Chl_FUll.glm.res$Predictor<-rownames(Chl_FUll.glm.res)
+Chl_FUll.glm.res$EtaSq<-c(NA,eta_squared(Chl_Full.glm.gam.l, partial=FALSE)$Eta2)
+Chl_FUll.glm.res$Response<-rep("Chlorophyll", nrow(Chl_FUll.glm.res))
+Chl_FUll.glm.res<-Chl_FUll.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Chl_FUll.glm.res<-Chl_FUll.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Chl_FUll.glm.res$Null.Dev<-c(summary(Chl_Full.glm.gam.l)$null.deviance, summary(Chl_Full.glm.gam.l)$df.null)
+Chl_FUll.glm.res$Resid.Dev<-c(summary(Chl_Full.glm.gam.l)$deviance, summary(Chl_Full.glm.gam.l)$df.residual)
+
+```
+
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 37% (Eta squared 0.37) of the variance. 
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Chl_Full.glm.gam.l)))
+
+#Q-Q plot
+qqnorm(resid(Chl_Full.glm.gam.l)); qqline(resid(Chl_Full.glm.gam.l))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Chl_Full.glm.gam.l), resid(Chl_Full.glm.gam.l))
+
+```
+
+Residuals look good.
+
+
+### Plot Model
+```{r}
+Chl_Full.mod.plot<-plot(ggpredict(Chl_Full.glm.gam.l , terms="Score_Full"), rawdata=TRUE, colors="darkgreen", jitter=TRUE)+
+  labs(x="Color Score Full Set", y=expression(paste('Chlorophyll (\u03BCg cm'^-2*") ")), title=NULL)+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=17, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.37 "))),size=sig.sz, hjust = 0);Chl_Full.mod.plot
+
+
+```
+
+
+## Each Timepoint
+
+### Model Selection
+```{r}
+#Compare Model Distributions
+Chl_TP.glm.gaus<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=gaussian(link="identity"))
+Chl_TP.glm.gaus.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=gaussian(link="log"))
+Chl_TP.glm.gaus.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=gaussian(link="inverse"))
+
+Chl_TP.glm.gam.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="log"))
+Chl_TP.glm.gam.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="inverse"))
+
+Chl_TP.glm.inv<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
+Chl_TP.glm.inv.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "log"))
+
+#AIC Model Comparison
+AIC(Chl_TP.glm.gaus, Chl_TP.glm.gaus.l, Chl_TP.glm.gaus.i, Chl_TP.glm.gam.l, Chl_TP.glm.gam.i,  Chl_TP.glm.inv, Chl_TP.glm.inv.l)
+```
+
+Gamma distribution with log link has the best model fit (lowest AIC)
+
+
+### Model Results
+```{r}
+#Model Results
+summary(Chl_TP.glm.gam.l)
+
+#Effect Size of Color Score
+eta_squared(Chl_TP.glm.gam.l, partial=FALSE)
+
+##Save model results
+Chl_TP.glm.res<-data.frame(summary(Chl_TP.glm.gam.l)$coefficients)
+rownames(Chl_TP.glm.res)[1]<-"Intercept"
+Chl_TP.glm.res$Predictor<-rownames(Chl_TP.glm.res)
+Chl_TP.glm.res$EtaSq<-c(NA,eta_squared(Chl_TP.glm.gam.l, partial=FALSE)$Eta2)
+Chl_TP.glm.res$Response<-rep("Chlorophyll", nrow(Chl_TP.glm.res))
+Chl_TP.glm.res<-Chl_TP.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Chl_TP.glm.res<-Chl_TP.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Chl_TP.glm.res$Null.Dev<-c(summary(Chl_TP.glm.gam.l)$null.deviance, summary(Chl_TP.glm.gam.l)$df.null)
+Chl_TP.glm.res$Resid.Dev<-c(summary(Chl_TP.glm.gam.l)$deviance, summary(Chl_TP.glm.gam.l)$df.residual)
+
+```
+
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 43% (Eta squared 0.43) of the variance. 
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Chl_TP.glm.gam.l)))
+
+#Q-Q plot
+qqnorm(resid(Chl_TP.glm.gam.l)); qqline(resid(Chl_TP.glm.gam.l))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Chl_TP.glm.gam.l), resid(Chl_TP.glm.gam.l))
+
+```
+
+Residuals look good.
+
+
+### Plot Model
+
+```{r}
+Chl_TP.mod.plot<-plot(ggpredict(Chl_TP.glm.gam.l , terms="Score_TP"), rawdata=TRUE, colors="lightgreen", jitter=TRUE)+
+  labs(x="Color Score by Timepoint", y=expression(paste('Chlorophyll (\u03BCg cm'^-2*") ")), title=NULL)+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=19, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.43 "))),size=sig.sz, hjust = 0);Chl_TP.mod.plot
+
+```
+
+
+# Model Symbionts ~ Color
+
+## Full Set
+
+### Model Selection
+```{r}
+#Compare Model Distributions
+Sym_Full.glm.gaus<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=gaussian(link="identity"))
+Sym_Full.glm.gaus.l<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=gaussian(link="log"))
+Sym_Full.glm.gaus.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=gaussian(link="inverse"))
+
+Sym_Full.glm.gam.l<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=Gamma(link="log"))
+Sym_Full.glm.gam.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=Gamma(link="inverse"))
+
+Sym_Full.glm.inv<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
+Sym_Full.glm.inv.l<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "log"))
+Sym_Full.glm.inv.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "inverse"))
+
+#AIC Model Comparison
+AIC(Sym_Full.glm.gaus, Sym_Full.glm.gaus.l, Sym_Full.glm.gaus.i, Sym_Full.glm.gam.l, Sym_Full.glm.gam.i,  Sym_Full.glm.inv, Sym_Full.glm.inv.l, Sym_Full.glm.inv.i)
+```
+
+Gamma distribution with inverse link has the best model fit (lowest AIC). Will compare with log link for comparability across responses.
+
+
+### Model Results
+```{r}
+#Model Results
+summary(Sym_Full.glm.gam.l)
+
+#Effect Size of Color Score
+eta_squared(Sym_Full.glm.gam.l, partial=FALSE)
+
+##Save model results
+Sym_FUll.glm.res<-data.frame(summary(Sym_Full.glm.gam.l)$coefficients)
+rownames(Sym_FUll.glm.res)[1]<-"Intercept"
+Sym_FUll.glm.res$Predictor<-rownames(Sym_FUll.glm.res)
+Sym_FUll.glm.res$EtaSq<-c(NA,eta_squared(Sym_Full.glm.gam.l, partial=FALSE)$Eta2)
+Sym_FUll.glm.res$Response<-rep("Symbionts", nrow(Sym_FUll.glm.res))
+Sym_FUll.glm.res<-Sym_FUll.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Sym_FUll.glm.res<-Sym_FUll.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Sym_FUll.glm.res$Null.Dev<-c(summary(Sym_Full.glm.gam.l)$null.deviance, summary(Sym_Full.glm.gam.l)$df.null)
+Sym_FUll.glm.res$Resid.Dev<-c(summary(Sym_Full.glm.gam.l)$deviance, summary(Sym_Full.glm.gam.l)$df.residual)
+
+```
+
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 34% (Eta squared 0.34) of the variance. 
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Sym_Full.glm.gam.l)))
+
+#Q-Q plot
+qqnorm(resid(Sym_Full.glm.gam.l)); qqline(resid(Sym_Full.glm.gam.l))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Sym_Full.glm.gam.l), resid(Sym_Full.glm.gam.l))
+
+```
+
+Residuals look good.
+
+
+### Plot Model
+```{r}
+Sym_Full.mod.plot<-plot(ggpredict(Sym_Full.glm.gam.l , terms="Score_Full"), rawdata=TRUE, colors="darkorange3", jitter=TRUE)+
+  labs(x="Color Score Full Set", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=17, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.34 "))),size=sig.sz, hjust = 0);Sym_Full.mod.plot
+
+
+```
+
+
+## Each Timepoint
+
+### Model Selection
+```{r}
+#Compare Model Distributions
+Sym_TP.glm.gaus<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=gaussian(link="identity"))
+Sym_TP.glm.gaus.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=gaussian(link="log"))
+Sym_TP.glm.gaus.i<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=gaussian(link="inverse"))
+
+Sym_TP.glm.gam.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=Gamma(link="log"))
+Sym_TP.glm.gam.i<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=Gamma(link="inverse"))
+
+Sym_TP.glm.inv<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
+Sym_TP.glm.inv.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "log"))
+
+#AIC Model Comparison
+AIC(Sym_TP.glm.gaus, Sym_TP.glm.gaus.l, Sym_TP.glm.gaus.i, Sym_TP.glm.gam.l, Sym_TP.glm.gam.i,  Sym_TP.glm.inv, Sym_TP.glm.inv.l)
+```
+
+Gamma distribution with log link has the best model fit (lowest AIC)
+
+
+### Model Results
+```{r}
+#Model Results
+summary(Sym_TP.glm.gam.l)
+
+#Effect Size of Color Score
+eta_squared(Sym_TP.glm.gam.l, partial=FALSE)
+
+##Save model results
+Sym_TP.glm.res<-data.frame(summary(Sym_TP.glm.gam.l)$coefficients)
+rownames(Sym_TP.glm.res)[1]<-"Intercept"
+Sym_TP.glm.res$Predictor<-rownames(Sym_TP.glm.res)
+Sym_TP.glm.res$EtaSq<-c(NA,eta_squared(Sym_TP.glm.gam.l, partial=FALSE)$Eta2)
+Sym_TP.glm.res$Response<-rep("Symbionts", nrow(Sym_TP.glm.res))
+Sym_TP.glm.res<-Sym_TP.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Sym_TP.glm.res<-Sym_TP.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Sym_TP.glm.res$Null.Dev<-c(summary(Sym_TP.glm.gam.l)$null.deviance, summary(Sym_TP.glm.gam.l)$df.null)
+Sym_TP.glm.res$Resid.Dev<-c(summary(Sym_TP.glm.gam.l)$deviance, summary(Sym_TP.glm.gam.l)$df.residual)
+
+```
+
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 43% (Eta squared 0.43) of the variance. 
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Sym_TP.glm.gam.l)))
+
+#Q-Q plot
+qqnorm(resid(Sym_TP.glm.gam.l)); qqline(resid(Sym_TP.glm.gam.l))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Sym_TP.glm.gam.l), resid(Sym_TP.glm.gam.l))
+
+```
+
+Residuals look good.
+
+
+### Plot Model
+
+```{r}
+Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TRUE, colors="darkorange", jitter=TRUE)+
+  labs(x="Color Score by Timepoint", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=19, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.43 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
+
+```
+
+
+# Figures
+
+```{r}
+##Create Panel
+Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
+                     Sym_Full.mod.plot, Sym_TP.mod.plot, 
+                     align=c("hv"), nrow=2, ncol=2, 
+                     rel_widths=1, rel_heights=1, 
+                     labels=c("A", "B", "C", "D", label_size=panel.lab.sz))
+
+##Save Figure
+ggsave(filename="Figures/Bleaching_Color_Models.png", plot=Bleach_Color_Models_fig, dpi=300, width=10, height=8, units="in")
+ 
 ```
 
