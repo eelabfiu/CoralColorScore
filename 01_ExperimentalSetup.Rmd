@@ -51,15 +51,16 @@ Geno.colors.o<-c("coral","lightskyblue","mediumpurple3")
 ##Plot Feature Sizes
 axis.title.sz=17
 axis.txt.sz=14
-leg.title.sz=20
-leg.txt.sz=18
+leg.title.sz=16
+leg.txt.sz=14
 levels.sz=7
 sig.sz=5
 panel.lab.sz=25
 point.sz=4
 bar.sz=1
 cap.sz=0.3
-plot.title.sz=24
+plot.title.sz=20
+
 ```
 
 
