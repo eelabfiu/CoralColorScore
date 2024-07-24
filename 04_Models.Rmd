@@ -511,9 +511,11 @@ write.csv(FullData, "Outputs/FullData.csv", row.names=FALSE)
 ##Create Panel
 Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
                      Sym_Full.mod.plot, Sym_TP.mod.plot, 
-                     align=c("hv"), nrow=2, ncol=2, 
+                     nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
-                     labels=c("A", "B", "C", "D", label_size=panel.lab.sz))
+                     labels=c("A", "B", "C", "D"),
+                     label_size=panel.lab.sz,
+                     label_fontface = "bold")
 
 ##Save Figure
 ggsave(filename="Figures/Bleaching_Color_Models.png", plot=Bleach_Color_Models_fig, dpi=300, width=10, height=8, units="in")
