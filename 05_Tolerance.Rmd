@@ -104,3 +104,3573 @@ TolData$Sym.prop[which(TolData$Sym.prop>1)]<-1.0000
 TolData$Site.Geno<-paste(TolData$Site, TolData$Genotype, sep="_")
 ```
 
+
+### Subset by Timepoint
+```{r}
+TolData_W1<-subset(TolData, TimeP=="W1")
+TolData_W2<-subset(TolData, TimeP=="W2")
+TolData_M1<-subset(TolData, TimeP=="M1")
+TolData_M4<-subset(TolData, TimeP=="M4")
+TolData_M8<-subset(TolData, TimeP=="M8")
+TolData_M12<-subset(TolData, TimeP=="M12")
+
+```
+
+
+
+# Thermal Tolerance Chlorophyll
+
+## Full Set
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData$Chl.prop)
+shapiro.test(TolData$Chl.prop)
+#Not Normal
+
+##Try log transformation
+hist(log(TolData$Chl.prop))
+shapiro.test(log(TolData$Chl.prop))
+#Not normal but improved
+
+##Try square root transformation
+hist(sqrt(TolData$Chl.prop))
+shapiro.test(log(TolData$Chl.prop))
+#Not normal but much improved
+
+
+##Model as a function of Site and Genotype and Timepoint
+##Model with sqrt transformation
+Tol_Chl_lm<-lm(sqrt(Chl.prop)~Site+Genotype+TimeP+ Site:Genotype + Site:TimeP + Genotype:TimeP, data=TolData)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_lm)); qqline(resid(Tol_Chl_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_lm), resid(Tol_Chl_lm))
+
+```
+
+
+### Model Results
+
+```{r}
+#Model Results
+summary(Tol_Chl_lm)
+anova(Tol_Chl_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_lm.res<-data.frame(anova(Tol_Chl_lm))
+Tol_Chl_lm.res$Predictor<-rownames(Tol_Chl_lm.res)
+Tol_Chl_lm.res$EtaSq<-c(eta_squared(Tol_Chl_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_lm.res))
+Tol_Chl_lm.res<-Tol_Chl_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+Strong influence of Timepoint, including interactions with main variables of interest, Site and Genotype. Will analyze each Timepoint individually. 
+
+
+## Chl Timepoint W1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W1$Chl.prop)
+shapiro.test(TolData_W1$Chl.prop)
+#Not Normal
+
+##Try log transformation
+hist(log(TolData_W1$Chl.prop))
+shapiro.test(log(TolData_W1$Chl.prop))
+#Normal
+
+##Model as a function of Site and Genotype
+##Model with log transformation
+Tol_Chl_W1_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_W1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_W1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_W1_lm)); qqline(resid(Tol_Chl_W1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_W1_lm), resid(Tol_Chl_W1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_W1_lm)
+anova(Tol_Chl_W1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_W1_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_W1_lm.res<-data.frame(anova(Tol_Chl_W1_lm))
+Tol_Chl_W1_lm.res$Predictor<-rownames(Tol_Chl_W1_lm.res)
+Tol_Chl_W1_lm.res$EtaSq<-c(eta_squared(Tol_Chl_W1_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_W1_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_W1_lm.res))
+Tol_Chl_W1_lm.res$TimeP<-rep("W1", nrow(Tol_Chl_W1_lm.res))
+Tol_Chl_W1_lm.res<-Tol_Chl_W1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype and Site*Genotype.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_W1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_W1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_W1_lm.geno<-data.frame(emmeans(Tol_Chl_W1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_W1_lm.geno<-Tol_Chl_W1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_W1_lm.geno$group1<-paste(Tol_Chl_W1_lm.geno$Site, Tol_Chl_W1_lm.geno$group1, sep="_")
+Tol_Chl_W1_lm.geno$group2<-paste(Tol_Chl_W1_lm.geno$Site, Tol_Chl_W1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_W1_lm.site<-data.frame(emmeans(Tol_Chl_W1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_W1_lm.site<-Tol_Chl_W1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_W1_lm.site$group1<-paste(Tol_Chl_W1_lm.site$group1, Tol_Chl_W1_lm.site$Genotype, sep="_")
+Tol_Chl_W1_lm.site$group2<-paste(Tol_Chl_W1_lm.site$group2, Tol_Chl_W1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_W1_lm.p<-rbind(Tol_Chl_W1_lm.geno[,c(1:2,4:8)], Tol_Chl_W1_lm.site[,c(1:2,4:8)])
+Tol_Chl_W1_lm.p<-Tol_Chl_W1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_W1_lm.p$Sig<-ifelse(Tol_Chl_W1_lm.p$p<0.001, "***", ifelse(Tol_Chl_W1_lm.p$p<0.01, "**", ifelse(Tol_Chl_W1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_W1_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_W1_lm.p))
+Tol_Chl_W1_lm.p$TimeP<-rep("W1", nrow(Tol_Chl_W1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_W1_SG<-summarySE(TolData_W1, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_W1_SG.plot<-ggplot(Tol_Chl_W1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_W1_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_Chl_W1_SG.plot
+
+```
+
+
+## Chl Timepoint W2
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W2$Chl.prop)
+shapiro.test(TolData_W2$Chl.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_Chl_W2_lm<-lm(Chl.prop~Site+Genotype+Site:Genotype, data=TolData_W2)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_W2_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_W2_lm)); qqline(resid(Tol_Chl_W2_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_W2_lm), resid(Tol_Chl_W2_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_W2_lm)
+anova(Tol_Chl_W2_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_W2_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_W2_lm.res<-data.frame(anova(Tol_Chl_W2_lm))
+Tol_Chl_W2_lm.res$Predictor<-rownames(Tol_Chl_W2_lm.res)
+Tol_Chl_W2_lm.res$EtaSq<-c(eta_squared(Tol_Chl_W2_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_W2_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_W2_lm.res))
+Tol_Chl_W2_lm.res$TimeP<-rep("W2", nrow(Tol_Chl_W2_lm.res))
+Tol_Chl_W2_lm.res<-Tol_Chl_W2_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_W2_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_W2_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_W2_lm.geno<-data.frame(emmeans(Tol_Chl_W2_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_W2_lm.geno<-Tol_Chl_W2_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_W2_lm.geno$group1<-paste(Tol_Chl_W2_lm.geno$Site, Tol_Chl_W2_lm.geno$group1, sep="_")
+Tol_Chl_W2_lm.geno$group2<-paste(Tol_Chl_W2_lm.geno$Site, Tol_Chl_W2_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_W2_lm.site<-data.frame(emmeans(Tol_Chl_W2_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_W2_lm.site<-Tol_Chl_W2_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_W2_lm.site$group1<-paste(Tol_Chl_W2_lm.site$group1, Tol_Chl_W2_lm.site$Genotype, sep="_")
+Tol_Chl_W2_lm.site$group2<-paste(Tol_Chl_W2_lm.site$group2, Tol_Chl_W2_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_W2_lm.p<-rbind(Tol_Chl_W2_lm.geno[,c(1:2,4:8)], Tol_Chl_W2_lm.site[,c(1:2,4:8)])
+Tol_Chl_W2_lm.p<-Tol_Chl_W2_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_W2_lm.p$Sig<-ifelse(Tol_Chl_W2_lm.p$p<0.001, "***", ifelse(Tol_Chl_W2_lm.p$p<0.01, "**", ifelse(Tol_Chl_W2_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_W2_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_W2_lm.p))
+Tol_Chl_W2_lm.p$TimeP<-rep("W2", nrow(Tol_Chl_W2_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_W2_SG<-summarySE(TolData_W2, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_W2_SG.plot<-ggplot(Tol_Chl_W2_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_W2_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_Chl_W2_SG.plot
+
+```
+
+
+## Chl Timepoint M1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M1$Chl.prop)
+shapiro.test(TolData_M1$Chl.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_Chl_M1_lm<-lm(Chl.prop~Site+Genotype+Site:Genotype, data=TolData_M1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_M1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_M1_lm)); qqline(resid(Tol_Chl_M1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_M1_lm), resid(Tol_Chl_M1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_M1_lm)
+anova(Tol_Chl_M1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_M1_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_M1_lm.res<-data.frame(anova(Tol_Chl_M1_lm))
+Tol_Chl_M1_lm.res$Predictor<-rownames(Tol_Chl_M1_lm.res)
+Tol_Chl_M1_lm.res$EtaSq<-c(eta_squared(Tol_Chl_M1_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_M1_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_M1_lm.res))
+Tol_Chl_M1_lm.res$TimeP<-rep("M1", nrow(Tol_Chl_M1_lm.res))
+Tol_Chl_M1_lm.res<-Tol_Chl_M1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_M1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_M1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_M1_lm.geno<-data.frame(emmeans(Tol_Chl_M1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_M1_lm.geno<-Tol_Chl_M1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M1_lm.geno$group1<-paste(Tol_Chl_M1_lm.geno$Site, Tol_Chl_M1_lm.geno$group1, sep="_")
+Tol_Chl_M1_lm.geno$group2<-paste(Tol_Chl_M1_lm.geno$Site, Tol_Chl_M1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_M1_lm.site<-data.frame(emmeans(Tol_Chl_M1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_M1_lm.site<-Tol_Chl_M1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M1_lm.site$group1<-paste(Tol_Chl_M1_lm.site$group1, Tol_Chl_M1_lm.site$Genotype, sep="_")
+Tol_Chl_M1_lm.site$group2<-paste(Tol_Chl_M1_lm.site$group2, Tol_Chl_M1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_M1_lm.p<-rbind(Tol_Chl_M1_lm.geno[,c(1:2,4:8)], Tol_Chl_M1_lm.site[,c(1:2,4:8)])
+Tol_Chl_M1_lm.p<-Tol_Chl_M1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_M1_lm.p$Sig<-ifelse(Tol_Chl_M1_lm.p$p<0.001, "***", ifelse(Tol_Chl_M1_lm.p$p<0.01, "**", ifelse(Tol_Chl_M1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_M1_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_M1_lm.p))
+Tol_Chl_M1_lm.p$TimeP<-rep("M1", nrow(Tol_Chl_M1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_M1_SG<-summarySE(TolData_M1, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_M1_SG.plot<-ggplot(Tol_Chl_M1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M1_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_Chl_M1_SG.plot
+
+```
+
+
+## Chl Timepoint M4
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M4$Chl.prop)
+shapiro.test(TolData_M4$Chl.prop)
+#Not Normal
+
+##Try log transformation
+hist(log(TolData_M4$Chl.prop))
+shapiro.test(log(TolData_M4$Chl.prop))
+#Normal
+
+##Model as a function of Site and Genotype
+##Model with log transformation
+Tol_Chl_M4_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_M4)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_M4_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_M4_lm)); qqline(resid(Tol_Chl_M4_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_M4_lm), resid(Tol_Chl_M4_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_M4_lm)
+anova(Tol_Chl_M4_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_M4_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_M4_lm.res<-data.frame(anova(Tol_Chl_M4_lm))
+Tol_Chl_M4_lm.res$Predictor<-rownames(Tol_Chl_M4_lm.res)
+Tol_Chl_M4_lm.res$EtaSq<-c(eta_squared(Tol_Chl_M4_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_M4_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_M4_lm.res))
+Tol_Chl_M4_lm.res$TimeP<-rep("M4", nrow(Tol_Chl_M4_lm.res))
+Tol_Chl_M4_lm.res<-Tol_Chl_M4_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Marginal effect (p<0.1) of Site*Genotype.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_M4_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_M4_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_M4_lm.geno<-data.frame(emmeans(Tol_Chl_M4_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_M4_lm.geno<-Tol_Chl_M4_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M4_lm.geno$group1<-paste(Tol_Chl_M4_lm.geno$Site, Tol_Chl_M4_lm.geno$group1, sep="_")
+Tol_Chl_M4_lm.geno$group2<-paste(Tol_Chl_M4_lm.geno$Site, Tol_Chl_M4_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_M4_lm.site<-data.frame(emmeans(Tol_Chl_M4_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_M4_lm.site<-Tol_Chl_M4_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M4_lm.site$group1<-paste(Tol_Chl_M4_lm.site$group1, Tol_Chl_M4_lm.site$Genotype, sep="_")
+Tol_Chl_M4_lm.site$group2<-paste(Tol_Chl_M4_lm.site$group2, Tol_Chl_M4_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_M4_lm.p<-rbind(Tol_Chl_M4_lm.geno[,c(1:2,4:8)], Tol_Chl_M4_lm.site[,c(1:2,4:8)])
+Tol_Chl_M4_lm.p<-Tol_Chl_M4_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_M4_lm.p$Sig<-ifelse(Tol_Chl_M4_lm.p$p<0.001, "***", ifelse(Tol_Chl_M4_lm.p$p<0.01, "**", ifelse(Tol_Chl_M4_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_M4_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_M4_lm.p))
+Tol_Chl_M4_lm.p$TimeP<-rep("M4", nrow(Tol_Chl_M4_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_M4_SG<-summarySE(TolData_M4, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_M4_SG.plot<-ggplot(Tol_Chl_M4_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M4_lm.p,  y.position=0.55, step.increase=0.20, label="Sig", hide.ns=TRUE); Tol_Chl_M4_SG.plot
+
+```
+
+
+## Chl Timepoint M8
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M8$Chl.prop)
+shapiro.test(TolData_M8$Chl.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_Chl_M8_lm<-lm(Chl.prop~Site+Genotype+Site:Genotype, data=TolData_M8)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_M8_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_M8_lm)); qqline(resid(Tol_Chl_M8_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_M8_lm), resid(Tol_Chl_M8_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_M8_lm)
+anova(Tol_Chl_M8_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_M8_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_M8_lm.res<-data.frame(anova(Tol_Chl_M8_lm))
+Tol_Chl_M8_lm.res$Predictor<-rownames(Tol_Chl_M8_lm.res)
+Tol_Chl_M8_lm.res$EtaSq<-c(eta_squared(Tol_Chl_M8_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_M8_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_M8_lm.res))
+Tol_Chl_M8_lm.res$TimeP<-rep("M8", nrow(Tol_Chl_M8_lm.res))
+Tol_Chl_M8_lm.res<-Tol_Chl_M8_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Marginal effect (p<0.1) of Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_M8_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_M8_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_M8_lm.geno<-data.frame(emmeans(Tol_Chl_M8_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_M8_lm.geno<-Tol_Chl_M8_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M8_lm.geno$group1<-paste(Tol_Chl_M8_lm.geno$Site, Tol_Chl_M8_lm.geno$group1, sep="_")
+Tol_Chl_M8_lm.geno$group2<-paste(Tol_Chl_M8_lm.geno$Site, Tol_Chl_M8_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_M8_lm.site<-data.frame(emmeans(Tol_Chl_M8_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_M8_lm.site<-Tol_Chl_M8_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M8_lm.site$group1<-paste(Tol_Chl_M8_lm.site$group1, Tol_Chl_M8_lm.site$Genotype, sep="_")
+Tol_Chl_M8_lm.site$group2<-paste(Tol_Chl_M8_lm.site$group2, Tol_Chl_M8_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_M8_lm.p<-rbind(Tol_Chl_M8_lm.geno[,c(1:2,4:8)], Tol_Chl_M8_lm.site[,c(1:2,4:8)])
+Tol_Chl_M8_lm.p<-Tol_Chl_M8_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_M8_lm.p$Sig<-ifelse(Tol_Chl_M8_lm.p$p<0.001, "***", ifelse(Tol_Chl_M8_lm.p$p<0.01, "**", ifelse(Tol_Chl_M8_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_M8_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_M8_lm.p))
+Tol_Chl_M8_lm.p$TimeP<-rep("M8", nrow(Tol_Chl_M8_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_M8_SG<-summarySE(TolData_M8, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_M8_SG.plot<-ggplot(Tol_Chl_M8_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M8_lm.p,  y.position=0.65, step.increase=0.6, label="Sig", hide.ns=TRUE); Tol_Chl_M8_SG.plot
+
+```
+
+
+## Chl Timepoint M12
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M12$Chl.prop)
+shapiro.test(TolData_M12$Chl.prop)
+#Not Normal
+
+##Try log transformation
+hist(log(TolData_M12$Chl.prop))
+shapiro.test(log(TolData_M12$Chl.prop))
+#Normal
+
+##Model as a function of Site and Genotype
+##Model with log transformation
+Tol_Chl_M12_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_M12)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Chl_M12_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Chl_M12_lm)); qqline(resid(Tol_Chl_M12_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Chl_M12_lm), resid(Tol_Chl_M12_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Chl_M12_lm)
+anova(Tol_Chl_M12_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Chl_M12_lm, partial=FALSE)
+
+##Save model results
+Tol_Chl_M12_lm.res<-data.frame(anova(Tol_Chl_M12_lm))
+Tol_Chl_M12_lm.res$Predictor<-rownames(Tol_Chl_M12_lm.res)
+Tol_Chl_M12_lm.res$EtaSq<-c(eta_squared(Tol_Chl_M12_lm, partial=FALSE)$Eta2, NA)
+Tol_Chl_M12_lm.res$Response<-rep("Chlorophyll", nrow(Tol_Chl_M12_lm.res))
+Tol_Chl_M12_lm.res$TimeP<-rep("M12", nrow(Tol_Chl_M12_lm.res))
+Tol_Chl_M12_lm.res<-Tol_Chl_M12_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Marginal (p<0.1) effect of Site. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Chl_M12_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Chl_M12_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Chl_M12_lm.geno<-data.frame(emmeans(Tol_Chl_M12_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Chl_M12_lm.geno<-Tol_Chl_M12_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M12_lm.geno$group1<-paste(Tol_Chl_M12_lm.geno$Site, Tol_Chl_M12_lm.geno$group1, sep="_")
+Tol_Chl_M12_lm.geno$group2<-paste(Tol_Chl_M12_lm.geno$Site, Tol_Chl_M12_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Chl_M12_lm.site<-data.frame(emmeans(Tol_Chl_M12_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Chl_M12_lm.site<-Tol_Chl_M12_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Chl_M12_lm.site$group1<-paste(Tol_Chl_M12_lm.site$group1, Tol_Chl_M12_lm.site$Genotype, sep="_")
+Tol_Chl_M12_lm.site$group2<-paste(Tol_Chl_M12_lm.site$group2, Tol_Chl_M12_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Chl_M12_lm.p<-rbind(Tol_Chl_M12_lm.geno[,c(1:2,4:8)], Tol_Chl_M12_lm.site[,c(1:2,4:8)])
+Tol_Chl_M12_lm.p<-Tol_Chl_M12_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Chl_M12_lm.p$Sig<-ifelse(Tol_Chl_M12_lm.p$p<0.001, "***", ifelse(Tol_Chl_M12_lm.p$p<0.01, "**", ifelse(Tol_Chl_M12_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Chl_M12_lm.p$Response<-rep("Chlorophyll", nrow(Tol_Chl_M12_lm.p))
+Tol_Chl_M12_lm.p$TimeP<-rep("M12", nrow(Tol_Chl_M12_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Chl_M12_SG<-summarySE(TolData_M12, measurevar="Chl.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Chl_M12_SG.plot<-ggplot(Tol_Chl_M12_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Chlorophyll Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M12_lm.p,  y.position=0.2, step.increase=0.20, label="Sig", hide.ns=TRUE); Tol_Chl_M12_SG.plot
+
+```
+
+
+# Thermal Tolerance Symbionts
+
+## Full Set
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData$Sym.prop)
+shapiro.test(TolData$Sym.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData$Sym.prop)^2)
+shapiro.test((TolData$Sym.prop)^2)
+#Not normal 
+
+##Try cubed transformation
+hist((TolData$Sym.prop)^3)
+shapiro.test((TolData$Sym.prop)^3)
+#Not normal 
+
+
+##Model as a function of Site and Genotype and Timepoint
+##Model with no transformation and check residuals
+Tol_Sym_lm<-lm(Sym.prop~Site+Genotype+TimeP+ Site:Genotype + Site:TimeP + Genotype:TimeP, data=TolData)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_lm)); qqline(resid(Tol_Sym_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_lm), resid(Tol_Sym_lm))
+
+```
+
+
+### Model Results
+
+```{r}
+#Model Results
+summary(Tol_Sym_lm)
+anova(Tol_Sym_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_lm.res<-data.frame(anova(Tol_Sym_lm))
+Tol_Sym_lm.res$Predictor<-rownames(Tol_Sym_lm.res)
+Tol_Sym_lm.res$EtaSq<-c(eta_squared(Tol_Sym_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_lm.res))
+Tol_Sym_lm.res<-Tol_Sym_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+Strong influence of Timepoint, including interactions with main variables of interest, Site and Genotype. Will analyze each Timepoint individually. 
+
+
+## Sym Timepoint W2
+Symbiont density was not measured at W1, starting with W2 for this response.
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W2$Sym.prop)
+shapiro.test(TolData_W2$Sym.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_Sym_W2_lm<-lm(Sym.prop~Site+Genotype+Site:Genotype, data=TolData_W2)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_W2_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_W2_lm)); qqline(resid(Tol_Sym_W2_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_W2_lm), resid(Tol_Sym_W2_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Sym_W2_lm)
+anova(Tol_Sym_W2_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_W2_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_W2_lm.res<-data.frame(anova(Tol_Sym_W2_lm))
+Tol_Sym_W2_lm.res$Predictor<-rownames(Tol_Sym_W2_lm.res)
+Tol_Sym_W2_lm.res$EtaSq<-c(eta_squared(Tol_Sym_W2_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_W2_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_W2_lm.res))
+Tol_Sym_W2_lm.res$TimeP<-rep("W2", nrow(Tol_Sym_W2_lm.res))
+Tol_Sym_W2_lm.res<-Tol_Sym_W2_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Marginal effect (p<0.1) of Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Sym_W2_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Sym_W2_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Sym_W2_lm.geno<-data.frame(emmeans(Tol_Sym_W2_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Sym_W2_lm.geno<-Tol_Sym_W2_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_W2_lm.geno$group1<-paste(Tol_Sym_W2_lm.geno$Site, Tol_Sym_W2_lm.geno$group1, sep="_")
+Tol_Sym_W2_lm.geno$group2<-paste(Tol_Sym_W2_lm.geno$Site, Tol_Sym_W2_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Sym_W2_lm.site<-data.frame(emmeans(Tol_Sym_W2_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Sym_W2_lm.site<-Tol_Sym_W2_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_W2_lm.site$group1<-paste(Tol_Sym_W2_lm.site$group1, Tol_Sym_W2_lm.site$Genotype, sep="_")
+Tol_Sym_W2_lm.site$group2<-paste(Tol_Sym_W2_lm.site$group2, Tol_Sym_W2_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Sym_W2_lm.p<-rbind(Tol_Sym_W2_lm.geno[,c(1:2,4:8)], Tol_Sym_W2_lm.site[,c(1:2,4:8)])
+Tol_Sym_W2_lm.p<-Tol_Sym_W2_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Sym_W2_lm.p$Sig<-ifelse(Tol_Sym_W2_lm.p$p<0.001, "***", ifelse(Tol_Sym_W2_lm.p$p<0.01, "**", ifelse(Tol_Sym_W2_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Sym_W2_lm.p$Response<-rep("Symbionts", nrow(Tol_Sym_W2_lm.p))
+Tol_Sym_W2_lm.p$TimeP<-rep("W2", nrow(Tol_Sym_W2_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Sym_W2_SG<-summarySE(TolData_W2, measurevar="Sym.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Sym_W2_SG.plot<-ggplot(Tol_Sym_W2_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Symbiont Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_W2_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_Sym_W2_SG.plot
+
+```
+
+
+## Sym Timepoint M1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M1$Sym.prop)
+shapiro.test(TolData_M1$Sym.prop)
+#Not normal
+
+##Try log transformation
+hist(log(TolData_M1$Sym.prop))
+shapiro.test(log(TolData_M1$Sym.prop))
+#Normal
+
+##Model as a function of Site and Genotype
+##Model with log transformation
+Tol_Sym_M1_lm<-lm(log(Sym.prop)~Site+Genotype+Site:Genotype, data=TolData_M1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_M1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_M1_lm)); qqline(resid(Tol_Sym_M1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_M1_lm), resid(Tol_Sym_M1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Sym_M1_lm)
+anova(Tol_Sym_M1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_M1_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_M1_lm.res<-data.frame(anova(Tol_Sym_M1_lm))
+Tol_Sym_M1_lm.res$Predictor<-rownames(Tol_Sym_M1_lm.res)
+Tol_Sym_M1_lm.res$EtaSq<-c(eta_squared(Tol_Sym_M1_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_M1_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_M1_lm.res))
+Tol_Sym_M1_lm.res$TimeP<-rep("M1", nrow(Tol_Sym_M1_lm.res))
+Tol_Sym_M1_lm.res<-Tol_Sym_M1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Marginal effects (p<0.1) of Site and Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Sym_M1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Sym_M1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Sym_M1_lm.geno<-data.frame(emmeans(Tol_Sym_M1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Sym_M1_lm.geno<-Tol_Sym_M1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M1_lm.geno$group1<-paste(Tol_Sym_M1_lm.geno$Site, Tol_Sym_M1_lm.geno$group1, sep="_")
+Tol_Sym_M1_lm.geno$group2<-paste(Tol_Sym_M1_lm.geno$Site, Tol_Sym_M1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Sym_M1_lm.site<-data.frame(emmeans(Tol_Sym_M1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Sym_M1_lm.site<-Tol_Sym_M1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M1_lm.site$group1<-paste(Tol_Sym_M1_lm.site$group1, Tol_Sym_M1_lm.site$Genotype, sep="_")
+Tol_Sym_M1_lm.site$group2<-paste(Tol_Sym_M1_lm.site$group2, Tol_Sym_M1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Sym_M1_lm.p<-rbind(Tol_Sym_M1_lm.geno[,c(1:2,4:8)], Tol_Sym_M1_lm.site[,c(1:2,4:8)])
+Tol_Sym_M1_lm.p<-Tol_Sym_M1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Sym_M1_lm.p$Sig<-ifelse(Tol_Sym_M1_lm.p$p<0.001, "***", ifelse(Tol_Sym_M1_lm.p$p<0.01, "**", ifelse(Tol_Sym_M1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Sym_M1_lm.p$Response<-rep("Symbionts", nrow(Tol_Sym_M1_lm.p))
+Tol_Sym_M1_lm.p$TimeP<-rep("M1", nrow(Tol_Sym_M1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Sym_M1_SG<-summarySE(TolData_M1, measurevar="Sym.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Sym_M1_SG.plot<-ggplot(Tol_Sym_M1_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Symbiont Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+ ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_M1_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_Sym_M1_SG.plot
+
+```
+
+
+## Sym Timepoint M4
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M4$Sym.prop)
+shapiro.test(TolData_M4$Sym.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M4$Sym.prop)^2)
+shapiro.test((TolData_M4$Sym.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M4$Sym.prop)^3)
+shapiro.test((TolData_M4$Sym.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_Sym_M4_lm<-lm(Sym.prop~Site+Genotype+Site:Genotype, data=TolData_M4)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_M4_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_M4_lm)); qqline(resid(Tol_Sym_M4_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_M4_lm), resid(Tol_Sym_M4_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Sym_M4_lm)
+anova(Tol_Sym_M4_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_M4_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_M4_lm.res<-data.frame(anova(Tol_Sym_M4_lm))
+Tol_Sym_M4_lm.res$Predictor<-rownames(Tol_Sym_M4_lm.res)
+Tol_Sym_M4_lm.res$EtaSq<-c(eta_squared(Tol_Sym_M4_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_M4_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_M4_lm.res))
+Tol_Sym_M4_lm.res$TimeP<-rep("M4", nrow(Tol_Sym_M4_lm.res))
+Tol_Sym_M4_lm.res<-Tol_Sym_M4_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Marginal effect (p<0.1) of Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Sym_M4_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Sym_M4_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Sym_M4_lm.geno<-data.frame(emmeans(Tol_Sym_M4_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Sym_M4_lm.geno<-Tol_Sym_M4_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M4_lm.geno$group1<-paste(Tol_Sym_M4_lm.geno$Site, Tol_Sym_M4_lm.geno$group1, sep="_")
+Tol_Sym_M4_lm.geno$group2<-paste(Tol_Sym_M4_lm.geno$Site, Tol_Sym_M4_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Sym_M4_lm.site<-data.frame(emmeans(Tol_Sym_M4_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Sym_M4_lm.site<-Tol_Sym_M4_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M4_lm.site$group1<-paste(Tol_Sym_M4_lm.site$group1, Tol_Sym_M4_lm.site$Genotype, sep="_")
+Tol_Sym_M4_lm.site$group2<-paste(Tol_Sym_M4_lm.site$group2, Tol_Sym_M4_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Sym_M4_lm.p<-rbind(Tol_Sym_M4_lm.geno[,c(1:2,4:8)], Tol_Sym_M4_lm.site[,c(1:2,4:8)])
+Tol_Sym_M4_lm.p<-Tol_Sym_M4_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Sym_M4_lm.p$Sig<-ifelse(Tol_Sym_M4_lm.p$p<0.001, "***", ifelse(Tol_Sym_M4_lm.p$p<0.01, "**", ifelse(Tol_Sym_M4_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Sym_M4_lm.p$Response<-rep("Symbionts", nrow(Tol_Sym_M4_lm.p))
+Tol_Sym_M4_lm.p$TimeP<-rep("M4", nrow(Tol_Sym_M4_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Sym_M4_SG<-summarySE(TolData_M4, measurevar="Sym.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Sym_M4_SG.plot<-ggplot(Tol_Sym_M4_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Symbiont Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_M4_lm.p,  y.position=1.1, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_Sym_M4_SG.plot
+
+```
+
+
+## Sym Timepoint M8
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M8$Sym.prop)
+shapiro.test(TolData_M8$Sym.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M8$Sym.prop)^2)
+shapiro.test((TolData_M8$Sym.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M8$Sym.prop)^3)
+shapiro.test((TolData_M8$Sym.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_Sym_M8_lm<-lm(Sym.prop~Site+Genotype+Site:Genotype, data=TolData_M8)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_M8_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_M8_lm)); qqline(resid(Tol_Sym_M8_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_M8_lm), resid(Tol_Sym_M8_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Sym_M8_lm)
+anova(Tol_Sym_M8_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_M8_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_M8_lm.res<-data.frame(anova(Tol_Sym_M8_lm))
+Tol_Sym_M8_lm.res$Predictor<-rownames(Tol_Sym_M8_lm.res)
+Tol_Sym_M8_lm.res$EtaSq<-c(eta_squared(Tol_Sym_M8_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_M8_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_M8_lm.res))
+Tol_Sym_M8_lm.res$TimeP<-rep("M8", nrow(Tol_Sym_M8_lm.res))
+Tol_Sym_M8_lm.res<-Tol_Sym_M8_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site. Marginal effect (p<0.1) of Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Sym_M8_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Sym_M8_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Sym_M8_lm.geno<-data.frame(emmeans(Tol_Sym_M8_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Sym_M8_lm.geno<-Tol_Sym_M8_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M8_lm.geno$group1<-paste(Tol_Sym_M8_lm.geno$Site, Tol_Sym_M8_lm.geno$group1, sep="_")
+Tol_Sym_M8_lm.geno$group2<-paste(Tol_Sym_M8_lm.geno$Site, Tol_Sym_M8_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Sym_M8_lm.site<-data.frame(emmeans(Tol_Sym_M8_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Sym_M8_lm.site<-Tol_Sym_M8_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M8_lm.site$group1<-paste(Tol_Sym_M8_lm.site$group1, Tol_Sym_M8_lm.site$Genotype, sep="_")
+Tol_Sym_M8_lm.site$group2<-paste(Tol_Sym_M8_lm.site$group2, Tol_Sym_M8_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Sym_M8_lm.p<-rbind(Tol_Sym_M8_lm.geno[,c(1:2,4:8)], Tol_Sym_M8_lm.site[,c(1:2,4:8)])
+Tol_Sym_M8_lm.p<-Tol_Sym_M8_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Sym_M8_lm.p$Sig<-ifelse(Tol_Sym_M8_lm.p$p<0.001, "***", ifelse(Tol_Sym_M8_lm.p$p<0.01, "**", ifelse(Tol_Sym_M8_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Sym_M8_lm.p$Response<-rep("Symbionts", nrow(Tol_Sym_M8_lm.p))
+Tol_Sym_M8_lm.p$TimeP<-rep("M8", nrow(Tol_Sym_M8_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Sym_M8_SG<-summarySE(TolData_M8, measurevar="Sym.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Sym_M8_SG.plot<-ggplot(Tol_Sym_M8_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Symbiont Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_M8_lm.p,  y.position=1.05, step.increase=0.4, label="Sig", hide.ns=TRUE); Tol_Sym_M8_SG.plot
+
+```
+
+
+## Sym Timepoint M12
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M12$Sym.prop)
+shapiro.test(TolData_M12$Sym.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_Sym_M12_lm<-lm(Sym.prop~Site+Genotype+Site:Genotype, data=TolData_M12)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_Sym_M12_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_Sym_M12_lm)); qqline(resid(Tol_Sym_M12_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_Sym_M12_lm), resid(Tol_Sym_M12_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_Sym_M12_lm)
+anova(Tol_Sym_M12_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_Sym_M12_lm, partial=FALSE)
+
+##Save model results
+Tol_Sym_M12_lm.res<-data.frame(anova(Tol_Sym_M12_lm))
+Tol_Sym_M12_lm.res$Predictor<-rownames(Tol_Sym_M12_lm.res)
+Tol_Sym_M12_lm.res$EtaSq<-c(eta_squared(Tol_Sym_M12_lm, partial=FALSE)$Eta2, NA)
+Tol_Sym_M12_lm.res$Response<-rep("Symbionts", nrow(Tol_Sym_M12_lm.res))
+Tol_Sym_M12_lm.res$TimeP<-rep("M12", nrow(Tol_Sym_M12_lm.res))
+Tol_Sym_M12_lm.res<-Tol_Sym_M12_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+No significant effects of Site or Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_Sym_M12_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_Sym_M12_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_Sym_M12_lm.geno<-data.frame(emmeans(Tol_Sym_M12_lm, pairwise~Genotype | Site)$contrasts)
+Tol_Sym_M12_lm.geno<-Tol_Sym_M12_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M12_lm.geno$group1<-paste(Tol_Sym_M12_lm.geno$Site, Tol_Sym_M12_lm.geno$group1, sep="_")
+Tol_Sym_M12_lm.geno$group2<-paste(Tol_Sym_M12_lm.geno$Site, Tol_Sym_M12_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_Sym_M12_lm.site<-data.frame(emmeans(Tol_Sym_M12_lm, pairwise~Site | Genotype)$contrasts)
+Tol_Sym_M12_lm.site<-Tol_Sym_M12_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_Sym_M12_lm.site$group1<-paste(Tol_Sym_M12_lm.site$group1, Tol_Sym_M12_lm.site$Genotype, sep="_")
+Tol_Sym_M12_lm.site$group2<-paste(Tol_Sym_M12_lm.site$group2, Tol_Sym_M12_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_Sym_M12_lm.p<-rbind(Tol_Sym_M12_lm.geno[,c(1:2,4:8)], Tol_Sym_M12_lm.site[,c(1:2,4:8)])
+Tol_Sym_M12_lm.p<-Tol_Sym_M12_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_Sym_M12_lm.p$Sig<-ifelse(Tol_Sym_M12_lm.p$p<0.001, "***", ifelse(Tol_Sym_M12_lm.p$p<0.01, "**", ifelse(Tol_Sym_M12_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_Sym_M12_lm.p$Response<-rep("Symbionts", nrow(Tol_Sym_M12_lm.p))
+Tol_Sym_M12_lm.p$TimeP<-rep("M12", nrow(Tol_Sym_M12_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_Sym_M12_SG<-summarySE(TolData_M12, measurevar="Sym.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_Sym_M12_SG.plot<-ggplot(Tol_Sym_M12_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Symbiont Retention")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o); Tol_Sym_M12_SG.plot
+
+#+ stat_pvalue_manual(data=Tol_Sym_M12_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE) #No significant differences
+```
+
+
+# Thermal Tolerance Color Full Set
+
+## Full Set
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData$Score_Full.prop)
+shapiro.test(TolData$Score_Full.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData$Score_Full.prop)^2)
+shapiro.test((TolData$Score_Full.prop)^2)
+#Not normal 
+
+##Try cubed transformation
+hist((TolData$Score_Full.prop)^3)
+shapiro.test((TolData$Score_Full.prop)^3)
+#Not normal 
+
+
+##Model as a function of Site and Genotype and Timepoint
+##Model with no transformation and check residuals
+Tol_ScoreF_lm<-lm(Score_Full.prop~Site+Genotype+TimeP+ Site:Genotype + Site:TimeP + Genotype:TimeP, data=TolData)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_lm)); qqline(resid(Tol_ScoreF_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_lm), resid(Tol_ScoreF_lm))
+
+```
+
+Residuals are not great, need to check for other modeling options for Color Full Set.
+
+
+### Model Results
+
+```{r}
+#Model Results
+summary(Tol_ScoreF_lm)
+anova(Tol_ScoreF_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_lm.res<-data.frame(anova(Tol_ScoreF_lm))
+Tol_ScoreF_lm.res$Predictor<-rownames(Tol_ScoreF_lm.res)
+Tol_ScoreF_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_lm.res))
+Tol_ScoreF_lm.res<-Tol_ScoreF_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+Strong influence of Timepoint, including interactions with Genotype. Will analyze each Timepoint individually. 
+
+
+## Color Score Full Set Timepoint W1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W1$Score_Full.prop)
+shapiro.test(TolData_W1$Score_Full.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreF_W1_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_W1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_W1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_W1_lm)); qqline(resid(Tol_ScoreF_W1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_W1_lm), resid(Tol_ScoreF_W1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_W1_lm)
+anova(Tol_ScoreF_W1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_W1_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_W1_lm.res<-data.frame(anova(Tol_ScoreF_W1_lm))
+Tol_ScoreF_W1_lm.res$Predictor<-rownames(Tol_ScoreF_W1_lm.res)
+Tol_ScoreF_W1_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_W1_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_W1_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_W1_lm.res))
+Tol_ScoreF_W1_lm.res$TimeP<-rep("W1", nrow(Tol_ScoreF_W1_lm.res))
+Tol_ScoreF_W1_lm.res<-Tol_ScoreF_W1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_W1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_W1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_W1_lm.geno<-data.frame(emmeans(Tol_ScoreF_W1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_W1_lm.geno<-Tol_ScoreF_W1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_W1_lm.geno$group1<-paste(Tol_ScoreF_W1_lm.geno$Site, Tol_ScoreF_W1_lm.geno$group1, sep="_")
+Tol_ScoreF_W1_lm.geno$group2<-paste(Tol_ScoreF_W1_lm.geno$Site, Tol_ScoreF_W1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_W1_lm.site<-data.frame(emmeans(Tol_ScoreF_W1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_W1_lm.site<-Tol_ScoreF_W1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_W1_lm.site$group1<-paste(Tol_ScoreF_W1_lm.site$group1, Tol_ScoreF_W1_lm.site$Genotype, sep="_")
+Tol_ScoreF_W1_lm.site$group2<-paste(Tol_ScoreF_W1_lm.site$group2, Tol_ScoreF_W1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_W1_lm.p<-rbind(Tol_ScoreF_W1_lm.geno[,c(1:2,4:8)], Tol_ScoreF_W1_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_W1_lm.p<-Tol_ScoreF_W1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_W1_lm.p$Sig<-ifelse(Tol_ScoreF_W1_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_W1_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_W1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_W1_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_W1_lm.p))
+Tol_ScoreF_W1_lm.p$TimeP<-rep("W1", nrow(Tol_ScoreF_W1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_W1_SG<-summarySE(TolData_W1, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_W1_SG.plot<-ggplot(Tol_ScoreF_W1_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_W1_lm.p,  y.position=0.80, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreF_W1_SG.plot
+
+```
+
+
+## Color Score Full Set Timepoint W2
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W2$Score_Full.prop)
+shapiro.test(TolData_W2$Score_Full.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreF_W2_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_W2)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_W2_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_W2_lm)); qqline(resid(Tol_ScoreF_W2_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_W2_lm), resid(Tol_ScoreF_W2_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_W2_lm)
+anova(Tol_ScoreF_W2_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_W2_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_W2_lm.res<-data.frame(anova(Tol_ScoreF_W2_lm))
+Tol_ScoreF_W2_lm.res$Predictor<-rownames(Tol_ScoreF_W2_lm.res)
+Tol_ScoreF_W2_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_W2_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_W2_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_W2_lm.res))
+Tol_ScoreF_W2_lm.res$TimeP<-rep("W2", nrow(Tol_ScoreF_W2_lm.res))
+Tol_ScoreF_W2_lm.res<-Tol_ScoreF_W2_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_W2_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_W2_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_W2_lm.geno<-data.frame(emmeans(Tol_ScoreF_W2_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_W2_lm.geno<-Tol_ScoreF_W2_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_W2_lm.geno$group1<-paste(Tol_ScoreF_W2_lm.geno$Site, Tol_ScoreF_W2_lm.geno$group1, sep="_")
+Tol_ScoreF_W2_lm.geno$group2<-paste(Tol_ScoreF_W2_lm.geno$Site, Tol_ScoreF_W2_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_W2_lm.site<-data.frame(emmeans(Tol_ScoreF_W2_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_W2_lm.site<-Tol_ScoreF_W2_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_W2_lm.site$group1<-paste(Tol_ScoreF_W2_lm.site$group1, Tol_ScoreF_W2_lm.site$Genotype, sep="_")
+Tol_ScoreF_W2_lm.site$group2<-paste(Tol_ScoreF_W2_lm.site$group2, Tol_ScoreF_W2_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_W2_lm.p<-rbind(Tol_ScoreF_W2_lm.geno[,c(1:2,4:8)], Tol_ScoreF_W2_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_W2_lm.p<-Tol_ScoreF_W2_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_W2_lm.p$Sig<-ifelse(Tol_ScoreF_W2_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_W2_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_W2_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_W2_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_W2_lm.p))
+Tol_ScoreF_W2_lm.p$TimeP<-rep("W2", nrow(Tol_ScoreF_W2_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_W2_SG<-summarySE(TolData_W2, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_W2_SG.plot<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.79, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreF_W2_SG.plot
+
+```
+
+
+## Color Score Full Set Timepoint M1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M1$Score_Full.prop)
+shapiro.test(TolData_M1$Score_Full.prop)
+#Not normal
+
+##Try square transformation
+hist((TolData_M1$Score_Full.prop)^2)
+shapiro.test((TolData_M1$Score_Full.prop)^2)
+#Not normal
+
+##Try cubed transformation
+hist((TolData_M1$Score_Full.prop)^3)
+shapiro.test((TolData_M1$Score_Full.prop)^3)
+#Not normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreF_M1_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_M1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_M1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_M1_lm)); qqline(resid(Tol_ScoreF_M1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_M1_lm), resid(Tol_ScoreF_M1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_M1_lm)
+anova(Tol_ScoreF_M1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_M1_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_M1_lm.res<-data.frame(anova(Tol_ScoreF_M1_lm))
+Tol_ScoreF_M1_lm.res$Predictor<-rownames(Tol_ScoreF_M1_lm.res)
+Tol_ScoreF_M1_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_M1_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_M1_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M1_lm.res))
+Tol_ScoreF_M1_lm.res$TimeP<-rep("M1", nrow(Tol_ScoreF_M1_lm.res))
+Tol_ScoreF_M1_lm.res<-Tol_ScoreF_M1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_M1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_M1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_M1_lm.geno<-data.frame(emmeans(Tol_ScoreF_M1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_M1_lm.geno<-Tol_ScoreF_M1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M1_lm.geno$group1<-paste(Tol_ScoreF_M1_lm.geno$Site, Tol_ScoreF_M1_lm.geno$group1, sep="_")
+Tol_ScoreF_M1_lm.geno$group2<-paste(Tol_ScoreF_M1_lm.geno$Site, Tol_ScoreF_M1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_M1_lm.site<-data.frame(emmeans(Tol_ScoreF_M1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_M1_lm.site<-Tol_ScoreF_M1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M1_lm.site$group1<-paste(Tol_ScoreF_M1_lm.site$group1, Tol_ScoreF_M1_lm.site$Genotype, sep="_")
+Tol_ScoreF_M1_lm.site$group2<-paste(Tol_ScoreF_M1_lm.site$group2, Tol_ScoreF_M1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_M1_lm.p<-rbind(Tol_ScoreF_M1_lm.geno[,c(1:2,4:8)], Tol_ScoreF_M1_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_M1_lm.p<-Tol_ScoreF_M1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_M1_lm.p$Sig<-ifelse(Tol_ScoreF_M1_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_M1_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_M1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_M1_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M1_lm.p))
+Tol_ScoreF_M1_lm.p$TimeP<-rep("M1", nrow(Tol_ScoreF_M1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_M1_SG<-summarySE(TolData_M1, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_M1_SG.plot<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+ ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=0.1, step.increase=0.12, label="Sig", hide.ns=TRUE); Tol_ScoreF_M1_SG.plot
+
+```
+
+
+## Color Score Full Set Timepoint M4
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M4$Score_Full.prop)
+shapiro.test(TolData_M4$Score_Full.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M4$Score_Full.prop)^2)
+shapiro.test((TolData_M4$Score_Full.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M4$Score_Full.prop)^3)
+shapiro.test((TolData_M4$Score_Full.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreF_M4_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_M4)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_M4_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_M4_lm)); qqline(resid(Tol_ScoreF_M4_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_M4_lm), resid(Tol_ScoreF_M4_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_M4_lm)
+anova(Tol_ScoreF_M4_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_M4_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_M4_lm.res<-data.frame(anova(Tol_ScoreF_M4_lm))
+Tol_ScoreF_M4_lm.res$Predictor<-rownames(Tol_ScoreF_M4_lm.res)
+Tol_ScoreF_M4_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_M4_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_M4_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M4_lm.res))
+Tol_ScoreF_M4_lm.res$TimeP<-rep("M4", nrow(Tol_ScoreF_M4_lm.res))
+Tol_ScoreF_M4_lm.res<-Tol_ScoreF_M4_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_M4_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_M4_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_M4_lm.geno<-data.frame(emmeans(Tol_ScoreF_M4_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_M4_lm.geno<-Tol_ScoreF_M4_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M4_lm.geno$group1<-paste(Tol_ScoreF_M4_lm.geno$Site, Tol_ScoreF_M4_lm.geno$group1, sep="_")
+Tol_ScoreF_M4_lm.geno$group2<-paste(Tol_ScoreF_M4_lm.geno$Site, Tol_ScoreF_M4_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_M4_lm.site<-data.frame(emmeans(Tol_ScoreF_M4_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_M4_lm.site<-Tol_ScoreF_M4_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M4_lm.site$group1<-paste(Tol_ScoreF_M4_lm.site$group1, Tol_ScoreF_M4_lm.site$Genotype, sep="_")
+Tol_ScoreF_M4_lm.site$group2<-paste(Tol_ScoreF_M4_lm.site$group2, Tol_ScoreF_M4_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_M4_lm.p<-rbind(Tol_ScoreF_M4_lm.geno[,c(1:2,4:8)], Tol_ScoreF_M4_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_M4_lm.p<-Tol_ScoreF_M4_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_M4_lm.p$Sig<-ifelse(Tol_ScoreF_M4_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_M4_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_M4_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_M4_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M4_lm.p))
+Tol_ScoreF_M4_lm.p$TimeP<-rep("M4", nrow(Tol_ScoreF_M4_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_M4_SG<-summarySE(TolData_M4, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_M4_SG.plot<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=0.1, step.increase=0.12, label="Sig", hide.ns=TRUE); Tol_ScoreF_M4_SG.plot
+
+```
+
+
+## Color Score Full Set Timepoint M8
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M8$Score_Full.prop)
+shapiro.test(TolData_M8$Score_Full.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M8$Score_Full.prop)^2)
+shapiro.test((TolData_M8$Score_Full.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M8$Score_Full.prop)^3)
+shapiro.test((TolData_M8$Score_Full.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreF_M8_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_M8)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_M8_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_M8_lm)); qqline(resid(Tol_ScoreF_M8_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_M8_lm), resid(Tol_ScoreF_M8_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_M8_lm)
+anova(Tol_ScoreF_M8_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_M8_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_M8_lm.res<-data.frame(anova(Tol_ScoreF_M8_lm))
+Tol_ScoreF_M8_lm.res$Predictor<-rownames(Tol_ScoreF_M8_lm.res)
+Tol_ScoreF_M8_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_M8_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_M8_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M8_lm.res))
+Tol_ScoreF_M8_lm.res$TimeP<-rep("M8", nrow(Tol_ScoreF_M8_lm.res))
+Tol_ScoreF_M8_lm.res<-Tol_ScoreF_M8_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site, Genotype, and Site * Genotype. 
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_M8_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_M8_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_M8_lm.geno<-data.frame(emmeans(Tol_ScoreF_M8_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_M8_lm.geno<-Tol_ScoreF_M8_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M8_lm.geno$group1<-paste(Tol_ScoreF_M8_lm.geno$Site, Tol_ScoreF_M8_lm.geno$group1, sep="_")
+Tol_ScoreF_M8_lm.geno$group2<-paste(Tol_ScoreF_M8_lm.geno$Site, Tol_ScoreF_M8_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_M8_lm.site<-data.frame(emmeans(Tol_ScoreF_M8_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_M8_lm.site<-Tol_ScoreF_M8_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M8_lm.site$group1<-paste(Tol_ScoreF_M8_lm.site$group1, Tol_ScoreF_M8_lm.site$Genotype, sep="_")
+Tol_ScoreF_M8_lm.site$group2<-paste(Tol_ScoreF_M8_lm.site$group2, Tol_ScoreF_M8_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_M8_lm.p<-rbind(Tol_ScoreF_M8_lm.geno[,c(1:2,4:8)], Tol_ScoreF_M8_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_M8_lm.p<-Tol_ScoreF_M8_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_M8_lm.p$Sig<-ifelse(Tol_ScoreF_M8_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_M8_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_M8_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_M8_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M8_lm.p))
+Tol_ScoreF_M8_lm.p$TimeP<-rep("M8", nrow(Tol_ScoreF_M8_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_M8_SG<-summarySE(TolData_M8, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_M8_SG.plot<-ggplot(Tol_ScoreF_M8_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_M8_lm.p,  y.position=0.65, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_ScoreF_M8_SG.plot
+
+```
+
+
+## Color Score Full Set Timepoint M12
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M12$Score_Full.prop)
+shapiro.test(TolData_M12$Score_Full.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreF_M12_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_M12)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreF_M12_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreF_M12_lm)); qqline(resid(Tol_ScoreF_M12_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreF_M12_lm), resid(Tol_ScoreF_M12_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreF_M12_lm)
+anova(Tol_ScoreF_M12_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreF_M12_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreF_M12_lm.res<-data.frame(anova(Tol_ScoreF_M12_lm))
+Tol_ScoreF_M12_lm.res$Predictor<-rownames(Tol_ScoreF_M12_lm.res)
+Tol_ScoreF_M12_lm.res$EtaSq<-c(eta_squared(Tol_ScoreF_M12_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreF_M12_lm.res$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M12_lm.res))
+Tol_ScoreF_M12_lm.res$TimeP<-rep("M12", nrow(Tol_ScoreF_M12_lm.res))
+Tol_ScoreF_M12_lm.res<-Tol_ScoreF_M12_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+No significant effects of Site or Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreF_M12_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreF_M12_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreF_M12_lm.geno<-data.frame(emmeans(Tol_ScoreF_M12_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreF_M12_lm.geno<-Tol_ScoreF_M12_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M12_lm.geno$group1<-paste(Tol_ScoreF_M12_lm.geno$Site, Tol_ScoreF_M12_lm.geno$group1, sep="_")
+Tol_ScoreF_M12_lm.geno$group2<-paste(Tol_ScoreF_M12_lm.geno$Site, Tol_ScoreF_M12_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreF_M12_lm.site<-data.frame(emmeans(Tol_ScoreF_M12_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreF_M12_lm.site<-Tol_ScoreF_M12_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreF_M12_lm.site$group1<-paste(Tol_ScoreF_M12_lm.site$group1, Tol_ScoreF_M12_lm.site$Genotype, sep="_")
+Tol_ScoreF_M12_lm.site$group2<-paste(Tol_ScoreF_M12_lm.site$group2, Tol_ScoreF_M12_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreF_M12_lm.p<-rbind(Tol_ScoreF_M12_lm.geno[,c(1:2,4:8)], Tol_ScoreF_M12_lm.site[,c(1:2,4:8)])
+Tol_ScoreF_M12_lm.p<-Tol_ScoreF_M12_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreF_M12_lm.p$Sig<-ifelse(Tol_ScoreF_M12_lm.p$p<0.001, "***", ifelse(Tol_ScoreF_M12_lm.p$p<0.01, "**", ifelse(Tol_ScoreF_M12_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreF_M12_lm.p$Response<-rep("Color_FullSet", nrow(Tol_ScoreF_M12_lm.p))
+Tol_ScoreF_M12_lm.p$TimeP<-rep("M12", nrow(Tol_ScoreF_M12_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreF_M12_SG<-summarySE(TolData_M12, measurevar="Score_Full.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreF_M12_SG.plot<-ggplot(Tol_ScoreF_M12_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention Full Set")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o); Tol_ScoreF_M12_SG.plot
+
+#+ stat_pvalue_manual(data=Tol_ScoreF_M12_lm.p,  y.position=0.8, step.increase=0.15, label="Sig", hide.ns=TRUE) #No significant differences
+
+```
+
+
+# Thermal Tolerance Color by Timepoint
+
+## Full Set
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData$Score_TP.prop)
+shapiro.test(TolData$Score_TP.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData$Score_TP.prop)^2)
+shapiro.test((TolData$Score_TP.prop)^2)
+#Not normal 
+
+##Try cubed transformation
+hist((TolData$Score_TP.prop)^3)
+shapiro.test((TolData$Score_TP.prop)^3)
+#Not normal 
+
+
+##Model as a function of Site and Genotype and Timepoint
+##Model with no transformation and check residuals
+Tol_ScoreTP_lm<-lm(Score_TP.prop~Site+Genotype+TimeP+ Site:Genotype + Site:TimeP + Genotype:TimeP, data=TolData)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_lm)); qqline(resid(Tol_ScoreTP_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_lm), resid(Tol_ScoreTP_lm))
+
+```
+
+Residuals are not great, need to check for other modeling options for Color by Timepoint.
+
+
+### Model Results
+
+```{r}
+#Model Results
+summary(Tol_ScoreTP_lm)
+anova(Tol_ScoreTP_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_lm.res<-data.frame(anova(Tol_ScoreTP_lm))
+Tol_ScoreTP_lm.res$Predictor<-rownames(Tol_ScoreTP_lm.res)
+Tol_ScoreTP_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_lm.res))
+Tol_ScoreTP_lm.res<-Tol_ScoreTP_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+Strong influence of Timepoint, including interactions with variables of interest, Site and Genotype. Will analyze each Timepoint individually. 
+
+
+## Color Score by Timepoint Timepoint W1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W1$Score_TP.prop)
+shapiro.test(TolData_W1$Score_TP.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreTP_W1_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_W1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_W1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_W1_lm)); qqline(resid(Tol_ScoreTP_W1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_W1_lm), resid(Tol_ScoreTP_W1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_W1_lm)
+anova(Tol_ScoreTP_W1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_W1_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_W1_lm.res<-data.frame(anova(Tol_ScoreTP_W1_lm))
+Tol_ScoreTP_W1_lm.res$Predictor<-rownames(Tol_ScoreTP_W1_lm.res)
+Tol_ScoreTP_W1_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_W1_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_W1_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_W1_lm.res))
+Tol_ScoreTP_W1_lm.res$TimeP<-rep("W1", nrow(Tol_ScoreTP_W1_lm.res))
+Tol_ScoreTP_W1_lm.res<-Tol_ScoreTP_W1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_W1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_W1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_W1_lm.geno<-data.frame(emmeans(Tol_ScoreTP_W1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_W1_lm.geno<-Tol_ScoreTP_W1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_W1_lm.geno$group1<-paste(Tol_ScoreTP_W1_lm.geno$Site, Tol_ScoreTP_W1_lm.geno$group1, sep="_")
+Tol_ScoreTP_W1_lm.geno$group2<-paste(Tol_ScoreTP_W1_lm.geno$Site, Tol_ScoreTP_W1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_W1_lm.site<-data.frame(emmeans(Tol_ScoreTP_W1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_W1_lm.site<-Tol_ScoreTP_W1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_W1_lm.site$group1<-paste(Tol_ScoreTP_W1_lm.site$group1, Tol_ScoreTP_W1_lm.site$Genotype, sep="_")
+Tol_ScoreTP_W1_lm.site$group2<-paste(Tol_ScoreTP_W1_lm.site$group2, Tol_ScoreTP_W1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_W1_lm.p<-rbind(Tol_ScoreTP_W1_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_W1_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_W1_lm.p<-Tol_ScoreTP_W1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_W1_lm.p$Sig<-ifelse(Tol_ScoreTP_W1_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_W1_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_W1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_W1_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_W1_lm.p))
+Tol_ScoreTP_W1_lm.p$TimeP<-rep("W1", nrow(Tol_ScoreTP_W1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_W1_SG<-summarySE(TolData_W1, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_W1_SG.plot<-ggplot(Tol_ScoreTP_W1_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_W1_lm.p,  y.position=0.45, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W1_SG.plot
+
+```
+
+
+## Color Score by Timepoint Timepoint W2
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_W2$Score_TP.prop)
+shapiro.test(TolData_W2$Score_TP.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreTP_W2_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_W2)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_W2_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_W2_lm)); qqline(resid(Tol_ScoreTP_W2_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_W2_lm), resid(Tol_ScoreTP_W2_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_W2_lm)
+anova(Tol_ScoreTP_W2_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_W2_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_W2_lm.res<-data.frame(anova(Tol_ScoreTP_W2_lm))
+Tol_ScoreTP_W2_lm.res$Predictor<-rownames(Tol_ScoreTP_W2_lm.res)
+Tol_ScoreTP_W2_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_W2_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_W2_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_W2_lm.res))
+Tol_ScoreTP_W2_lm.res$TimeP<-rep("W2", nrow(Tol_ScoreTP_W2_lm.res))
+Tol_ScoreTP_W2_lm.res<-Tol_ScoreTP_W2_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_W2_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_W2_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_W2_lm.geno<-data.frame(emmeans(Tol_ScoreTP_W2_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_W2_lm.geno<-Tol_ScoreTP_W2_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_W2_lm.geno$group1<-paste(Tol_ScoreTP_W2_lm.geno$Site, Tol_ScoreTP_W2_lm.geno$group1, sep="_")
+Tol_ScoreTP_W2_lm.geno$group2<-paste(Tol_ScoreTP_W2_lm.geno$Site, Tol_ScoreTP_W2_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_W2_lm.site<-data.frame(emmeans(Tol_ScoreTP_W2_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_W2_lm.site<-Tol_ScoreTP_W2_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_W2_lm.site$group1<-paste(Tol_ScoreTP_W2_lm.site$group1, Tol_ScoreTP_W2_lm.site$Genotype, sep="_")
+Tol_ScoreTP_W2_lm.site$group2<-paste(Tol_ScoreTP_W2_lm.site$group2, Tol_ScoreTP_W2_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_W2_lm.p<-rbind(Tol_ScoreTP_W2_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_W2_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_W2_lm.p<-Tol_ScoreTP_W2_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_W2_lm.p$Sig<-ifelse(Tol_ScoreTP_W2_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_W2_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_W2_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_W2_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_W2_lm.p))
+Tol_ScoreTP_W2_lm.p$TimeP<-rep("W2", nrow(Tol_ScoreTP_W2_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_W2_SG<-summarySE(TolData_W2, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_W2_SG.plot<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=0.4, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W2_SG.plot
+
+```
+
+
+## Color Score by Timepoint Timepoint M1
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M1$Score_TP.prop)
+shapiro.test(TolData_M1$Score_TP.prop)
+#Not normal
+
+##Try square transformation
+hist((TolData_M1$Score_TP.prop)^2)
+shapiro.test((TolData_M1$Score_TP.prop)^2)
+#Not normal
+
+##Try cubed transformation
+hist((TolData_M1$Score_TP.prop)^3)
+shapiro.test((TolData_M1$Score_TP.prop)^3)
+#Not normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreTP_M1_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M1)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_M1_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_M1_lm)); qqline(resid(Tol_ScoreTP_M1_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_M1_lm), resid(Tol_ScoreTP_M1_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_M1_lm)
+anova(Tol_ScoreTP_M1_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_M1_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_M1_lm.res<-data.frame(anova(Tol_ScoreTP_M1_lm))
+Tol_ScoreTP_M1_lm.res$Predictor<-rownames(Tol_ScoreTP_M1_lm.res)
+Tol_ScoreTP_M1_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_M1_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_M1_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M1_lm.res))
+Tol_ScoreTP_M1_lm.res$TimeP<-rep("M1", nrow(Tol_ScoreTP_M1_lm.res))
+Tol_ScoreTP_M1_lm.res<-Tol_ScoreTP_M1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_M1_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_M1_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_M1_lm.geno<-data.frame(emmeans(Tol_ScoreTP_M1_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_M1_lm.geno<-Tol_ScoreTP_M1_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M1_lm.geno$group1<-paste(Tol_ScoreTP_M1_lm.geno$Site, Tol_ScoreTP_M1_lm.geno$group1, sep="_")
+Tol_ScoreTP_M1_lm.geno$group2<-paste(Tol_ScoreTP_M1_lm.geno$Site, Tol_ScoreTP_M1_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_M1_lm.site<-data.frame(emmeans(Tol_ScoreTP_M1_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_M1_lm.site<-Tol_ScoreTP_M1_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M1_lm.site$group1<-paste(Tol_ScoreTP_M1_lm.site$group1, Tol_ScoreTP_M1_lm.site$Genotype, sep="_")
+Tol_ScoreTP_M1_lm.site$group2<-paste(Tol_ScoreTP_M1_lm.site$group2, Tol_ScoreTP_M1_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_M1_lm.p<-rbind(Tol_ScoreTP_M1_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_M1_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_M1_lm.p<-Tol_ScoreTP_M1_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_M1_lm.p$Sig<-ifelse(Tol_ScoreTP_M1_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_M1_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_M1_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_M1_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M1_lm.p))
+Tol_ScoreTP_M1_lm.p$TimeP<-rep("M1", nrow(Tol_ScoreTP_M1_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_M1_SG<-summarySE(TolData_M1, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_M1_SG.plot<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+ ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=0.22, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M1_SG.plot
+
+```
+
+
+## Color Score by Timepoint Timepoint M4
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M4$Score_TP.prop)
+shapiro.test(TolData_M4$Score_TP.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M4$Score_TP.prop)^2)
+shapiro.test((TolData_M4$Score_TP.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M4$Score_TP.prop)^3)
+shapiro.test((TolData_M4$Score_TP.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreTP_M4_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M4)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_M4_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_M4_lm)); qqline(resid(Tol_ScoreTP_M4_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_M4_lm), resid(Tol_ScoreTP_M4_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_M4_lm)
+anova(Tol_ScoreTP_M4_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_M4_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_M4_lm.res<-data.frame(anova(Tol_ScoreTP_M4_lm))
+Tol_ScoreTP_M4_lm.res$Predictor<-rownames(Tol_ScoreTP_M4_lm.res)
+Tol_ScoreTP_M4_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_M4_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_M4_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M4_lm.res))
+Tol_ScoreTP_M4_lm.res$TimeP<-rep("M4", nrow(Tol_ScoreTP_M4_lm.res))
+Tol_ScoreTP_M4_lm.res<-Tol_ScoreTP_M4_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_M4_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_M4_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_M4_lm.geno<-data.frame(emmeans(Tol_ScoreTP_M4_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_M4_lm.geno<-Tol_ScoreTP_M4_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M4_lm.geno$group1<-paste(Tol_ScoreTP_M4_lm.geno$Site, Tol_ScoreTP_M4_lm.geno$group1, sep="_")
+Tol_ScoreTP_M4_lm.geno$group2<-paste(Tol_ScoreTP_M4_lm.geno$Site, Tol_ScoreTP_M4_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_M4_lm.site<-data.frame(emmeans(Tol_ScoreTP_M4_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_M4_lm.site<-Tol_ScoreTP_M4_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M4_lm.site$group1<-paste(Tol_ScoreTP_M4_lm.site$group1, Tol_ScoreTP_M4_lm.site$Genotype, sep="_")
+Tol_ScoreTP_M4_lm.site$group2<-paste(Tol_ScoreTP_M4_lm.site$group2, Tol_ScoreTP_M4_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_M4_lm.p<-rbind(Tol_ScoreTP_M4_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_M4_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_M4_lm.p<-Tol_ScoreTP_M4_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_M4_lm.p$Sig<-ifelse(Tol_ScoreTP_M4_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_M4_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_M4_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_M4_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M4_lm.p))
+Tol_ScoreTP_M4_lm.p$TimeP<-rep("M4", nrow(Tol_ScoreTP_M4_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_M4_SG<-summarySE(TolData_M4, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_M4_SG.plot<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=0.3, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M4_SG.plot
+
+```
+
+
+## Color Score by Timepoint Timepoint M8
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M8$Score_TP.prop)
+shapiro.test(TolData_M8$Score_TP.prop)
+#Not Normal
+
+##Try square transformation
+hist((TolData_M8$Score_TP.prop)^2)
+shapiro.test((TolData_M8$Score_TP.prop)^2)
+#Not Normal
+
+##Try cubed transformation
+hist((TolData_M8$Score_TP.prop)^3)
+shapiro.test((TolData_M8$Score_TP.prop)^3)
+#Not Normal
+
+##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
+Tol_ScoreTP_M8_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M8)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_M8_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_M8_lm)); qqline(resid(Tol_ScoreTP_M8_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_M8_lm), resid(Tol_ScoreTP_M8_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_M8_lm)
+anova(Tol_ScoreTP_M8_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_M8_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_M8_lm.res<-data.frame(anova(Tol_ScoreTP_M8_lm))
+Tol_ScoreTP_M8_lm.res$Predictor<-rownames(Tol_ScoreTP_M8_lm.res)
+Tol_ScoreTP_M8_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_M8_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_M8_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M8_lm.res))
+Tol_ScoreTP_M8_lm.res$TimeP<-rep("M8", nrow(Tol_ScoreTP_M8_lm.res))
+Tol_ScoreTP_M8_lm.res<-Tol_ScoreTP_M8_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+No significant effects of Site or Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_M8_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_M8_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_M8_lm.geno<-data.frame(emmeans(Tol_ScoreTP_M8_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_M8_lm.geno<-Tol_ScoreTP_M8_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M8_lm.geno$group1<-paste(Tol_ScoreTP_M8_lm.geno$Site, Tol_ScoreTP_M8_lm.geno$group1, sep="_")
+Tol_ScoreTP_M8_lm.geno$group2<-paste(Tol_ScoreTP_M8_lm.geno$Site, Tol_ScoreTP_M8_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_M8_lm.site<-data.frame(emmeans(Tol_ScoreTP_M8_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_M8_lm.site<-Tol_ScoreTP_M8_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M8_lm.site$group1<-paste(Tol_ScoreTP_M8_lm.site$group1, Tol_ScoreTP_M8_lm.site$Genotype, sep="_")
+Tol_ScoreTP_M8_lm.site$group2<-paste(Tol_ScoreTP_M8_lm.site$group2, Tol_ScoreTP_M8_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_M8_lm.p<-rbind(Tol_ScoreTP_M8_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_M8_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_M8_lm.p<-Tol_ScoreTP_M8_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_M8_lm.p$Sig<-ifelse(Tol_ScoreTP_M8_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_M8_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_M8_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_M8_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M8_lm.p))
+Tol_ScoreTP_M8_lm.p$TimeP<-rep("M8", nrow(Tol_ScoreTP_M8_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_M8_SG<-summarySE(TolData_M8, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_M8_SG.plot<-ggplot(Tol_ScoreTP_M8_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o); Tol_ScoreTP_M8_SG.plot
+
+#+ stat_pvalue_manual(data=Tol_ScoreTP_M8_lm.p,  y.position=0.65, step.increase=0.25, label="Sig", hide.ns=TRUE) #No significant differences
+```
+
+
+## Color Score by Timepoint Timepoint M12
+
+### Run Model
+```{r}
+##Check normality
+hist(TolData_M12$Score_TP.prop)
+shapiro.test(TolData_M12$Score_TP.prop)
+#Normal
+
+##Model as a function of Site and Genotype
+Tol_ScoreTP_M12_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M12)
+
+```
+
+
+#### Check Residuals
+```{r}
+##Check Normality of Residuals
+#Distribution 
+plot(density(resid(Tol_ScoreTP_M12_lm)))
+
+#Q-Q plot
+qqnorm(resid(Tol_ScoreTP_M12_lm)); qqline(resid(Tol_ScoreTP_M12_lm))
+
+##Check Variance of Residuals across Fitted Values
+plot(fitted(Tol_ScoreTP_M12_lm), resid(Tol_ScoreTP_M12_lm))
+
+```
+
+
+### Model Results
+
+#### Overall
+```{r}
+#Model Results
+summary(Tol_ScoreTP_M12_lm)
+anova(Tol_ScoreTP_M12_lm)
+
+#Effect Size of Predictors
+eta_squared(Tol_ScoreTP_M12_lm, partial=FALSE)
+
+##Save model results
+Tol_ScoreTP_M12_lm.res<-data.frame(anova(Tol_ScoreTP_M12_lm))
+Tol_ScoreTP_M12_lm.res$Predictor<-rownames(Tol_ScoreTP_M12_lm.res)
+Tol_ScoreTP_M12_lm.res$EtaSq<-c(eta_squared(Tol_ScoreTP_M12_lm, partial=FALSE)$Eta2, NA)
+Tol_ScoreTP_M12_lm.res$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M12_lm.res))
+Tol_ScoreTP_M12_lm.res$TimeP<-rep("M12", nrow(Tol_ScoreTP_M12_lm.res))
+Tol_ScoreTP_M12_lm.res<-Tol_ScoreTP_M12_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= "Df")
+
+```
+
+No significant effects of Site or Genotype. Still checking Site*Genotype for comparability across Timepoints.
+
+
+#### Pairwise
+```{r}
+#Pairwise comparisons across:
+
+#Genotypes within Sites
+emmeans(Tol_ScoreTP_M12_lm, pairwise~Genotype | Site)
+
+#Sites within Genotypes
+emmeans(Tol_ScoreTP_M12_lm, pairwise~Site | Genotype)
+
+##Save p-values
+
+#Genotypes within Sites
+Tol_ScoreTP_M12_lm.geno<-data.frame(emmeans(Tol_ScoreTP_M12_lm, pairwise~Genotype | Site)$contrasts)
+Tol_ScoreTP_M12_lm.geno<-Tol_ScoreTP_M12_lm.geno %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M12_lm.geno$group1<-paste(Tol_ScoreTP_M12_lm.geno$Site, Tol_ScoreTP_M12_lm.geno$group1, sep="_")
+Tol_ScoreTP_M12_lm.geno$group2<-paste(Tol_ScoreTP_M12_lm.geno$Site, Tol_ScoreTP_M12_lm.geno$group2, sep="_")
+
+#Sites within Genotypes
+Tol_ScoreTP_M12_lm.site<-data.frame(emmeans(Tol_ScoreTP_M12_lm, pairwise~Site | Genotype)$contrasts)
+Tol_ScoreTP_M12_lm.site<-Tol_ScoreTP_M12_lm.site %>% separate(col=contrast, into=c("group1", "group2"), sep=" - ", remove=TRUE)
+Tol_ScoreTP_M12_lm.site$group1<-paste(Tol_ScoreTP_M12_lm.site$group1, Tol_ScoreTP_M12_lm.site$Genotype, sep="_")
+Tol_ScoreTP_M12_lm.site$group2<-paste(Tol_ScoreTP_M12_lm.site$group2, Tol_ScoreTP_M12_lm.site$Genotype, sep="_")
+
+#Full list of p-values
+Tol_ScoreTP_M12_lm.p<-rbind(Tol_ScoreTP_M12_lm.geno[,c(1:2,4:8)], Tol_ScoreTP_M12_lm.site[,c(1:2,4:8)])
+Tol_ScoreTP_M12_lm.p<-Tol_ScoreTP_M12_lm.p %>% dplyr::rename( p = p.value)
+
+#Add Significance Levels
+Tol_ScoreTP_M12_lm.p$Sig<-ifelse(Tol_ScoreTP_M12_lm.p$p<0.001, "***", ifelse(Tol_ScoreTP_M12_lm.p$p<0.01, "**", ifelse(Tol_ScoreTP_M12_lm.p$p<0.05, "*", NA)))
+
+#Specify Response and Timepoint
+Tol_ScoreTP_M12_lm.p$Response<-rep("Color_TP", nrow(Tol_ScoreTP_M12_lm.p))
+Tol_ScoreTP_M12_lm.p$TimeP<-rep("M12", nrow(Tol_ScoreTP_M12_lm.p))
+
+```
+
+
+### Plot Retention by Site and Genotype
+```{r}
+##Summary statistics by Site and Genotype
+Tol_ScoreTP_M12_SG<-summarySE(TolData_M12, measurevar="Score_TP.prop", groupvars=c("Site.Geno", "Site", "Genotype"), na.rm=TRUE)
+
+##Plot Average Retention across Treatments
+Tol_ScoreTP_M12_SG.plot<-ggplot(Tol_ScoreTP_M12_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+   ggtitle("Color Retention by Timepoint")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        legend.box.background = element_rect(color = "black"),
+        legend.position="bottom", 
+        legend.direction="horizontal",
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o); Tol_ScoreTP_M12_SG.plot
+
+#+ stat_pvalue_manual(data=Tol_ScoreTP_M12_lm.p,  y.position=0.8, step.increase=0.15, label="Sig", hide.ns=TRUE) #No significant differences
+
+```
+
+
+# Contrasts Across Metrics
+
+### Combine Contrast Results
+Creating a heatmap to compare the direction and significance of pairwise comparisons across Tolerance metrics. Positive estimates indicate that Group 1 > Group 2. P values of less than 0.05 are considered significant.   
+```{r}
+##Combine Results
+Tol_contrasts<-rbind(Tol_Chl_W1_lm.p, Tol_Chl_W2_lm.p, Tol_Chl_M1_lm.p, 
+                     Tol_Chl_M4_lm.p, Tol_Chl_M8_lm.p, Tol_Chl_M12_lm.p,
+                     Tol_Sym_W2_lm.p, Tol_Sym_M1_lm.p, 
+                     Tol_Sym_M4_lm.p, Tol_Sym_M8_lm.p, Tol_Sym_M12_lm.p,
+                     Tol_ScoreF_W1_lm.p, Tol_ScoreF_W2_lm.p,
+                     Tol_ScoreF_M1_lm.p, Tol_ScoreF_M4_lm.p, 
+                     Tol_ScoreF_M8_lm.p, Tol_ScoreF_M12_lm.p,
+                     Tol_ScoreTP_W1_lm.p, Tol_ScoreTP_W2_lm.p,
+                     Tol_ScoreTP_M1_lm.p, Tol_ScoreTP_M4_lm.p, 
+                     Tol_ScoreTP_M8_lm.p, Tol_ScoreTP_M12_lm.p)
+
+##Create Contrast Column
+Tol_contrasts$Contrast<-paste(Tol_contrasts$group1, Tol_contrasts$group2, sep=" v. ")
+
+```
+
+
+### Standardize Response Scale
+Convert Estimate to the Response scale (instead of log scale) for models where the response was log transformed
+```{r}
+Tol_contrasts$Estimate<-Tol_contrasts$estimate
+
+#Chl W1
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")])
+
+#Chl M4
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")])
+
+#Chl M12
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")])
+
+#Sym M1
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")])
+
+
+```
+
+
+## Contrast Heatmaps
+
+### Week 1
+```{r}
+Tol_Pairs_W1.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="W1"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Week 1")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_W1.plot
+```
+
+
+### Week 2
+```{r}
+Tol_Pairs_W2.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="W2"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Week 2")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_W2.plot
+```
+
+
+### Month 1
+```{r}
+Tol_Pairs_M1.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M1"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Month 1")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_M1.plot
+```
+
+
+### Month 4
+```{r}
+Tol_Pairs_M4.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M4"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Month 4")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_M4.plot
+```
+
+
+### Month 8
+```{r}
+Tol_Pairs_M8.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M8"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Month 8")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_M8.plot
+```
+
+
+### Month 12
+```{r}
+Tol_Pairs_M12.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M12"),], aes(x=Response, y=Contrast, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Pairwise Contrasts Month 12")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_M12.plot
+```
+
+
+### Significant Differences
+
+Subsetting Contrasts to only include contrasts with significant differences in at least one of the thermal tolerance metrics (Chlorophyll or Symbiont or Color retention)
+```{r}
+##Add Set column with Contrast and Timepoint
+Tol_contrasts$Set<-paste(Tol_contrasts$TimeP, Tol_contrasts$Contrast, sep=" ")
+
+##Remove rows with non-significant p-values
+Tol_contrasts_sig<-subset(Tol_contrasts, p < 0.05)
+
+##Keep Sets where at least one metric shows a significant difference
+Tol_Sets_sig<-data.frame(Set=c(unique(Tol_contrasts_sig$Set)))
+Tol_contrasts_sig_Set<-merge(Tol_Sets_sig, Tol_contrasts, all.x=TRUE, all.y=FALSE)
+
+##Re-order by Timepoint
+Tol_contrasts_sig_Set$TimeP<-factor(Tol_contrasts_sig_Set$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+Tol_contrasts_sig_Set<- Tol_contrasts_sig_Set %>% arrange(desc(as.numeric(TimeP)))
+
+Tol_contrasts_sig_Set$Set<-factor(Tol_contrasts_sig_Set$Set, levels=c(unique(Tol_contrasts_sig_Set$Set)), ordered=TRUE)
+```
+
+
+```{r}
+Tol_Pairs_sig.plot<-ggplot(data=Tol_contrasts_sig_Set, aes(x=Response, y=Set, fill=Estimate))+
+  geom_tile()+
+  geom_text(aes(label=Sig), size=sig.sz)+
+  scale_fill_gradient2(low="#BA1E02FF", mid="white", high="#3BA0FDFF")+
+  theme_bw()+
+  ggtitle("Significant Pairwise Contrasts")+
+  theme(axis.text.x=element_text(size=axis.title.sz, colour="black", angle=45, hjust=1),
+        axis.text.y=element_text(size=axis.txt.sz-1, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz), 
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="", fill="Estimate");Tol_Pairs_sig.plot
+```
+
+
+# Figures
+
+### Week 1
+```{r}
+##Create Panel
+Tolerance_W1_fig<-plot_grid(Tol_Pairs_W1.plot, Tol_Chl_W1_SG.plot,
+                        Tol_ScoreF_W1_SG.plot, Tol_ScoreTP_W1_SG.plot, 
+                        nrow=1, ncol=4, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75), rel_heights=1, 
+                        labels=c("A", "B", "C", "D"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_W1.png", plot=Tolerance_W1_fig, dpi=300, width=20, height=6, units="in")
+
+```
+
+
+### Week 2
+```{r}
+##Create Panel
+Tolerance_W2_fig<-plot_grid(Tol_Pairs_W2.plot, 
+                        Tol_Chl_W2_SG.plot, Tol_ScoreF_W2_SG.plot,
+                        Tol_ScoreTP_W2_SG.plot, Tol_Sym_W2_SG.plot, 
+                        nrow=1, ncol=5, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75, 0.75),
+                        rel_heights=1, 
+                        labels=c("A", "B", "C", "D", "E"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_W2.png", plot=Tolerance_W2_fig, dpi=300, width=25, height=6, units="in")
+
+```
+
+
+### Month 1
+```{r}
+##Create Panel
+Tolerance_M1_fig<-plot_grid(Tol_Pairs_M1.plot, 
+                        Tol_Chl_M1_SG.plot, Tol_ScoreF_M1_SG.plot,
+                        Tol_ScoreTP_M1_SG.plot, Tol_Sym_M1_SG.plot, 
+                        nrow=1, ncol=5, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75, 0.75),
+                        rel_heights=1, 
+                        labels=c("A", "B", "C", "D", "E"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_M1.png", plot=Tolerance_M1_fig, dpi=300, width=25, height=6, units="in")
+
+```
+
+
+### Month 4
+```{r}
+##Create Panel
+Tolerance_M4_fig<-plot_grid(Tol_Pairs_M4.plot, 
+                        Tol_Chl_M4_SG.plot, Tol_ScoreF_M4_SG.plot,
+                        Tol_ScoreTP_M4_SG.plot, Tol_Sym_M4_SG.plot, 
+                        nrow=1, ncol=5, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75, 0.75),
+                        rel_heights=1, 
+                        labels=c("A", "B", "C", "D", "E"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_M4.png", plot=Tolerance_M4_fig, dpi=300, width=25, height=6, units="in")
+
+```
+
+
+### Month 8
+```{r}
+##Create Panel
+Tolerance_M8_fig<-plot_grid(Tol_Pairs_M8.plot, 
+                        Tol_Chl_M8_SG.plot, Tol_ScoreF_M8_SG.plot,
+                        Tol_ScoreTP_M8_SG.plot, Tol_Sym_M8_SG.plot, 
+                        nrow=1, ncol=5, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75, 0.75),
+                        rel_heights=1, 
+                        labels=c("A", "B", "C", "D", "E"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_M8.png", plot=Tolerance_M8_fig, dpi=300, width=25, height=6, units="in")
+
+```
+
+
+### Month 12
+```{r}
+##Create Panel
+Tolerance_M12_fig<-plot_grid(Tol_Pairs_M12.plot, 
+                        Tol_Chl_M12_SG.plot, Tol_ScoreF_M12_SG.plot,
+                        Tol_ScoreTP_M12_SG.plot, Tol_Sym_M12_SG.plot, 
+                        nrow=1, ncol=5, 
+                        rel_widths=c(1, 0.75, 0.75, 0.75, 0.75),
+                        rel_heights=1, 
+                        labels=c("A", "B", "C", "D", "E"), 
+                        label_size=panel.lab.sz, 
+                        label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Tolerance_M12.png", plot=Tolerance_M12_fig, dpi=300, width=25, height=6, units="in")
+
+```
+
+
+### Significant Contrasts Heatmap
+```{r}
+##Save Figure
+ggsave(filename="Figures/Tolerance_Heatmap.png", plot=Tol_Pairs_sig.plot, dpi=300, width=8, height=12, units="in")
+
+```
+
+
+# Tables
+
+### Linear Model Results
+```{r}
+##Combine Results Tables
+TableS2_Tol.lm.res<-rbind(Tol_Chl_W1_lm.res, Tol_Chl_W2_lm.res, 
+                          Tol_Chl_M1_lm.res, Tol_Chl_M4_lm.res,
+                          Tol_Chl_M8_lm.res, Tol_Chl_M12_lm.res,
+                          Tol_Sym_W2_lm.res, 
+                          Tol_Sym_M1_lm.res, Tol_Sym_M4_lm.res,
+                          Tol_Sym_M8_lm.res, Tol_Sym_M12_lm.res,
+                          Tol_ScoreF_W1_lm.res, Tol_ScoreF_W2_lm.res, 
+                          Tol_ScoreF_M1_lm.res, Tol_ScoreF_M4_lm.res,
+                          Tol_ScoreF_M8_lm.res, Tol_ScoreF_M12_lm.res,
+                          Tol_ScoreTP_W1_lm.res, Tol_ScoreTP_W2_lm.res, 
+                          Tol_ScoreTP_M1_lm.res, Tol_ScoreTP_M4_lm.res,
+                          Tol_ScoreTP_M8_lm.res, Tol_ScoreTP_M12_lm.res)
+
+##Organize
+names(TableS2_Tol.lm.res)
+TableS2_Tol.lm.res<-TableS2_Tol.lm.res[,c("TimeP", "Response", "Predictor", "DF", "Sum.Sq", "Mean.Sq", "F.value", "p.value", "EtaSq")]
+
+#Round to 4 digits
+TableS2_Tol.lm.res$Sum.Sq<-round(TableS2_Tol.lm.res$Sum.Sq, 4)
+TableS2_Tol.lm.res$Mean.Sq<-round(TableS2_Tol.lm.res$Mean.Sq, 4)
+TableS2_Tol.lm.res$F.value<-round(TableS2_Tol.lm.res$F.value, 4)
+TableS2_Tol.lm.res$p.value<-round(TableS2_Tol.lm.res$p.value, 4)
+TableS2_Tol.lm.res$EtaSq<-round(TableS2_Tol.lm.res$EtaSq, 4)
+
+##Write Out Table
+write.csv(TableS2_Tol.lm.res, "Tables/TableS2_Tolerance_LM_Results.csv", row.names=FALSE)
+
+```
+
+
+### Pairwise Comparison Results
+```{r}
+##Pairwise Results Table
+TableS3_Tol.pairwise<-Tol_contrasts
+
+##Organize
+names(TableS3_Tol.pairwise)
+TableS3_Tol.pairwise<-TableS3_Tol.pairwise[,c("TimeP", "Response", "Contrast", "Estimate", "SE", "df", "t.ratio", "p")]
+TableS3_Tol.pairwise<-TableS3_Tol.pairwise %>% dplyr::rename( DF = df) %>% dplyr::rename( p.value = p)
+
+#Round to 4 digits
+TableS3_Tol.pairwise$Estimate<-round(TableS3_Tol.pairwise$Estimate, 4)
+TableS3_Tol.pairwise$SE<-round(TableS3_Tol.pairwise$SE, 4)
+TableS3_Tol.pairwise$t.ratio<-round(TableS3_Tol.pairwise$t.ratio, 4)
+TableS3_Tol.pairwise$p.value<-round(TableS3_Tol.pairwise$p.value, 4)
+
+##Write Out Table
+write.csv(TableS3_Tol.pairwise, "Tables/TableS3_Tolerance_Pairwise_Results.csv", row.names=FALSE)
+```
+
