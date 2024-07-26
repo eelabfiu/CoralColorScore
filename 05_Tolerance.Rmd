@@ -192,14 +192,14 @@ hist(TolData_W1$Chl.prop)
 shapiro.test(TolData_W1$Chl.prop)
 #Not Normal
 
-##Try log transformation
-hist(log(TolData_W1$Chl.prop))
-shapiro.test(log(TolData_W1$Chl.prop))
+##Try log+1 transformation
+hist(log(TolData_W1$Chl.prop+1))
+shapiro.test(log(TolData_W1$Chl.prop+1))
 #Normal
 
 ##Model as a function of Site and Genotype
-##Model with log transformation
-Tol_Chl_W1_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_W1)
+##Model with log+1 transformation
+Tol_Chl_W1_lm<-lm(log(Chl.prop+1)~Site+Genotype+Site:Genotype, data=TolData_W1)
 
 ```
 
@@ -240,7 +240,7 @@ Tol_Chl_W1_lm.res<-Tol_Chl_W1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= 
 
 ```
 
-Significant effect of Genotype and Site*Genotype.
+Significant effect of Site and Genotype and Site*Genotype.
 
 
 #### Pairwise
@@ -564,14 +564,14 @@ hist(TolData_M4$Chl.prop)
 shapiro.test(TolData_M4$Chl.prop)
 #Not Normal
 
-##Try log transformation
-hist(log(TolData_M4$Chl.prop))
-shapiro.test(log(TolData_M4$Chl.prop))
+##Try log+1 transformation
+hist(log(TolData_M4$Chl.prop+1))
+shapiro.test(log(TolData_M4$Chl.prop+1))
 #Normal
 
 ##Model as a function of Site and Genotype
 ##Model with log transformation
-Tol_Chl_M4_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_M4)
+Tol_Chl_M4_lm<-lm(log(Chl.prop+1)~Site+Genotype+Site:Genotype, data=TolData_M4)
 
 ```
 
@@ -612,7 +612,7 @@ Tol_Chl_M4_lm.res<-Tol_Chl_M4_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= 
 
 ```
 
-Significant effect of Site and Genotype. Marginal effect (p<0.1) of Site*Genotype.
+Significant effect of Site and Genotype and Site*Genotype.
 
 
 #### Pairwise
@@ -814,14 +814,14 @@ hist(TolData_M12$Chl.prop)
 shapiro.test(TolData_M12$Chl.prop)
 #Not Normal
 
-##Try log transformation
-hist(log(TolData_M12$Chl.prop))
-shapiro.test(log(TolData_M12$Chl.prop))
+##Try log+1 transformation
+hist(log(TolData_M12$Chl.prop+1))
+shapiro.test(log(TolData_M12$Chl.prop+1))
 #Normal
 
 ##Model as a function of Site and Genotype
 ##Model with log transformation
-Tol_Chl_M12_lm<-lm(log(Chl.prop)~Site+Genotype+Site:Genotype, data=TolData_M12)
+Tol_Chl_M12_lm<-lm(log(Chl.prop+1)~Site+Genotype+Site:Genotype, data=TolData_M12)
 
 ```
 
@@ -862,7 +862,7 @@ Tol_Chl_M12_lm.res<-Tol_Chl_M12_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF
 
 ```
 
-Marginal (p<0.1) effect of Site. Still checking Site*Genotype for comparability across Timepoints.
+No significant effects. Still checking Site*Genotype for comparability across Timepoints.
 
 
 #### Pairwise
@@ -927,8 +927,9 @@ Tol_Chl_M12_SG.plot<-ggplot(Tol_Chl_M12_SG, aes(x=Site.Geno, y=Chl.prop, colour=
   labs(x="", y="Proportion Retained")+
   ylim(0, 1)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Chl_M12_lm.p,  y.position=0.2, step.increase=0.20, label="Sig", hide.ns=TRUE); Tol_Chl_M12_SG.plot
+  scale_color_manual(values = Geno.colors.o); Tol_Chl_M12_SG.plot
+
+#+ stat_pvalue_manual(data=Tol_Chl_M12_lm.p,  y.position=0.2, step.increase=0.20, label="Sig", hide.ns=TRUE) #No significant differences
 
 ```
 
@@ -1131,14 +1132,14 @@ hist(TolData_M1$Sym.prop)
 shapiro.test(TolData_M1$Sym.prop)
 #Not normal
 
-##Try log transformation
-hist(log(TolData_M1$Sym.prop))
-shapiro.test(log(TolData_M1$Sym.prop))
-#Normal
+##Try log+1 transformation
+hist(log(TolData_M1$Sym.prop+1))
+shapiro.test(log(TolData_M1$Sym.prop+1))
+#Not normal but improved
 
 ##Model as a function of Site and Genotype
 ##Model with log transformation
-Tol_Sym_M1_lm<-lm(log(Sym.prop)~Site+Genotype+Site:Genotype, data=TolData_M1)
+Tol_Sym_M1_lm<-lm(log(Sym.prop+1)~Site+Genotype+Site:Genotype, data=TolData_M1)
 
 ```
 
@@ -1179,7 +1180,7 @@ Tol_Sym_M1_lm.res<-Tol_Sym_M1_lm.res %>% dplyr::rename( p.value = "Pr..F.", DF= 
 
 ```
 
-Significant effect of Genotype. Marginal effects (p<0.1) of Site and Site * Genotype. Still checking Site*Genotype for comparability across Timepoints.
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
 
 
 #### Pairwise
@@ -1821,10 +1822,10 @@ Tol_ScoreF_W1_SG.plot<-ggplot(Tol_ScoreF_W1_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_W1_lm.p,  y.position=0.80, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreF_W1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_W1_lm.p,  y.position=0.80, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreF_W1_SG.plot
 
 ```
 
@@ -1944,10 +1945,10 @@ Tol_ScoreF_W2_SG.plot<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.79, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreF_W2_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.8, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreF_W2_SG.plot
 
 ```
 
@@ -2077,10 +2078,10 @@ Tol_ScoreF_M1_SG.plot<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
- ylim(0, 1)+ 
+ ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=0.1, step.increase=0.12, label="Sig", hide.ns=TRUE); Tol_ScoreF_M1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=1.1, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreF_M1_SG.plot
 
 ```
 
@@ -2211,10 +2212,10 @@ Tol_ScoreF_M4_SG.plot<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=0.1, step.increase=0.12, label="Sig", hide.ns=TRUE); Tol_ScoreF_M4_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=1.1, step.increase=0.22, label="Sig", hide.ns=TRUE); Tol_ScoreF_M4_SG.plot
 
 ```
 
@@ -2344,10 +2345,10 @@ Tol_ScoreF_M8_SG.plot<-ggplot(Tol_ScoreF_M8_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M8_lm.p,  y.position=0.65, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_ScoreF_M8_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_M8_lm.p,  y.position=1.1, step.increase=0.45, label="Sig", hide.ns=TRUE); Tol_ScoreF_M8_SG.plot
 
 ```
 
@@ -2466,7 +2467,7 @@ Tol_ScoreF_M12_SG.plot<-ggplot(Tol_ScoreF_M12_SG, aes(x=Site.Geno, y=Score_Full.
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o); Tol_ScoreF_M12_SG.plot
 
@@ -2657,10 +2658,10 @@ Tol_ScoreTP_W1_SG.plot<-ggplot(Tol_ScoreTP_W1_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_W1_lm.p,  y.position=0.45, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_W1_lm.p,  y.position=1, step.increase=0.45, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W1_SG.plot
 
 ```
 
@@ -2780,10 +2781,10 @@ Tol_ScoreTP_W2_SG.plot<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=0.4, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W2_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=1, step.increase=0.45, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W2_SG.plot
 
 ```
 
@@ -2913,10 +2914,10 @@ Tol_ScoreTP_M1_SG.plot<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
- ylim(0, 1)+ 
+ ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=0.22, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=1.05, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M1_SG.plot
 
 ```
 
@@ -3047,10 +3048,10 @@ Tol_ScoreTP_M4_SG.plot<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=0.3, step.increase=0.15, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M4_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=1.1, step.increase=0.4, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M4_SG.plot
 
 ```
 
@@ -3180,7 +3181,7 @@ Tol_ScoreTP_M8_SG.plot<-ggplot(Tol_ScoreTP_M8_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o); Tol_ScoreTP_M8_SG.plot
 
@@ -3302,7 +3303,7 @@ Tol_ScoreTP_M12_SG.plot<-ggplot(Tol_ScoreTP_M12_SG, aes(x=Site.Geno, y=Score_TP.
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="Proportion Retained")+
-  ylim(0, 1)+ 
+  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o); Tol_ScoreTP_M12_SG.plot
 
@@ -3335,21 +3336,21 @@ Tol_contrasts$Contrast<-paste(Tol_contrasts$group1, Tol_contrasts$group2, sep=" 
 
 
 ### Standardize Response Scale
-Convert Estimate to the Response scale (instead of log scale) for models where the response was log transformed
+Convert Estimate to the Response scale (instead of log +1 scale) for models where the response was log transformed
 ```{r}
 Tol_contrasts$Estimate<-Tol_contrasts$estimate
 
 #Chl W1
-Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")])
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")]<-c(exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="W1")])-1)
 
 #Chl M4
-Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")])
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")]<-c(exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M4")])-1)
 
 #Chl M12
-Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")])
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")]<-c(exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Chlorophyll" & Tol_contrasts$TimeP=="M12")])-1)
 
 #Sym M1
-Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")]<-exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")])
+Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")]<-c(exp(Tol_contrasts$estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts$TimeP=="M1")])-1)
 
 
 ```
