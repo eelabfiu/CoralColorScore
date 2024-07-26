@@ -39,7 +39,7 @@ Wax.Stand<-read.csv("Data/WaxStandards.csv", header=TRUE)
 SampData<-read.csv("Data/SampleData.csv", header=TRUE)
 
 ##Set factor variables
-SampData$TimeP<-factor(SampData$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+SampData$TimeP<-factor(SampData$TimeP, levels=c("W2", "M1", "M4"), ordered=TRUE)
 SampData$Site<-factor(SampData$Site, levels=c("KL", "SS"), ordered=TRUE)
 SampData$Genotype<-factor(SampData$Genotype, levels=c("AC8", "AC10", "AC12"), ordered=TRUE)
 SampData$Treatment<-factor(SampData$Treatment, levels=c("Control", "Heat"), ordered=TRUE)
@@ -47,6 +47,10 @@ SampData$Treat<-factor(SampData$Treat, levels=c("C", "H"), ordered=TRUE)
 
 ##Add a Sample Set Variable
 SampData$Set<-paste(SampData$TimeP, SampData$Site, SampData$Genotype, SampData$Treat, sep=".")
+
+##Add a Season Variable
+SampData$Seas<-ifelse(SampData$TimeP=="W2", "Summer1", ifelse(SampData$TimeP=="M1", "Summer2", ifelse(SampData$TimeP=="M4", "Winter" , NA)))
+SampData$Seas<-factor(SampData$Seas, levels=c("Summer1", "Summer2", "Winter"), ordered=TRUE)
 
 ```
 
@@ -152,13 +156,6 @@ Control Treatment
 ##Subset Control Treatment in Thermal Tolerance Assay 
 Chl.C<-subset(Chl, Treat=="C")
 
-#W1
-ggplot(subset(Chl.C, TimeP=="W1"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2.5)+
-  theme(axis.text.x = element_text(angle = 90))
-
 #W2
 ggplot(subset(Chl.C, TimeP=="W2"), aes(x=Set, y=Chl_ug.cm2)) + 
   geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
@@ -182,19 +179,6 @@ ggplot(subset(Chl.C, TimeP=="M4"), aes(x=Set, y=Chl_ug.cm2)) +
   ylim(0,2.5)+
   theme(axis.text.x = element_text(angle = 90))
 
-#M8
-ggplot(subset(Chl.C, TimeP=="M8"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,3.5)+
-  theme(axis.text.x = element_text(angle = 90))
-
-#M12
-ggplot(subset(Chl.C, TimeP=="M12"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,4)+
-  theme(axis.text.x = element_text(angle = 90))
 
 ##Remove Outliers 
 Chl.C.o<-Chl.C[-c(which(Chl.C$TimeP=="W2" & Chl.C$Chl_ug.cm2<0.25)),]
@@ -206,16 +190,6 @@ Heated Treatment
 ```{r}
 ##Subset Heated Treatment in Thermal Tolerance Assay
 Chl.H<-subset(Chl, Treat=="H")
-
-#W1
-ggplot(subset(Chl.H, TimeP=="W1"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2.5)+
-  theme(axis.text.x = element_text(angle = 90))
-
-Chl.H$RandN[which(Chl.H$TimeP=="W1" & Chl.H$Chl_ug.cm2>0.5)] #"W1_22"
-
 
 #W2
 ggplot(subset(Chl.H, TimeP=="W2"), aes(x=Set, y=Chl_ug.cm2)) + 
@@ -244,32 +218,12 @@ Chl.H$RandN[which(Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2<.25 & Chl.H$Genotype=="AC
 Chl.H$RandN[which(Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2>.55 & Chl.H$Site=="KL")] #"M4_72"
 Chl.H$RandN[which(Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2>.5 & Chl.H$Genotype=="AC10")] #"M4_54"
 
-#M8
-ggplot(subset(Chl.H, TimeP=="M8"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2)+
-  theme(axis.text.x = element_text(angle = 90))
-
-Chl.H$RandN[which(Chl.H$TimeP=="M8" & Chl.H$Chl_ug.cm2>1 & Chl.H$Genotype=="AC10")] #"M8_11" "M8_11" "M8_11"
-
-#M12
-ggplot(subset(Chl.H, TimeP=="M12"), aes(x=Set, y=Chl_ug.cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,1)+
-  theme(axis.text.x = element_text(angle = 90))
-
-Chl.H$RandN[which(Chl.H$TimeP=="M12" & Chl.H$Chl_ug.cm2>0.5)] #"M12_63" "M12_63" "M12_63"
 
 ##Remove Outliers
-Chl.H.o<-Chl.H[-c(which((Chl.H$TimeP=="W1" & Chl.H$Chl_ug.cm2>0.5) |
-                          (Chl.H$TimeP=="W2" & Chl.H$Chl_ug.cm2>0.75) |
+Chl.H.o<-Chl.H[-c(which((Chl.H$TimeP=="W2" & Chl.H$Chl_ug.cm2>0.75) |
                           (Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2<.25 & Chl.H$Genotype=="AC12") |
                           (Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2>.55 & Chl.H$Site=="KL") |
-                          (Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2>.5 & Chl.H$Genotype=="AC10") |
-                          (Chl.H$TimeP=="M8" & Chl.H$Chl_ug.cm2>1 & Chl.H$Genotype=="AC10") | 
-                          (Chl.H$TimeP=="M12" & Chl.H$Chl_ug.cm2>0.50))),]
+                          (Chl.H$TimeP=="M4" & Chl.H$Chl_ug.cm2>.5 & Chl.H$Genotype=="AC10"))),]
 
 
 ```
@@ -297,9 +251,9 @@ names(Chl.a)<-c("RandN", "ID", "Chl_ug.cm2")
 ##Merge Averaged Chlorophyll Data with Sample Meta Data to create Bleaching Data dataframe
 #Merges by Random Number (RandN) and ID columns
 #Retains all Thermal Tolerance Assay samples
-#Retains RandN, ID, TimeP, Site, Genotype, Treat, Treatment, Set, and SA_cm2 from SampData
+#Retains RandN, ID, TimeP, Site, Genotype, Treat, Treatment, Set, Season, and SA_cm2 from SampData
 names(SampData)
-BleachData<-merge(SampData[,c(1:7, 11, 13)], Chl.a, all.x=TRUE, all.y=FALSE)
+BleachData<-merge(SampData[,c(1:7, 12, 11, 14)], Chl.a, all.x=TRUE, all.y=FALSE)
 
 ```
 
@@ -359,7 +313,6 @@ Control Treatment
 ```{r}
 ##Subset Control Treatment in Thermal Tolerance Assay
 Sym.C<-subset(Sym, Treat=="C")
-Sym.C<-Sym.C[-c(which(is.na(Sym.C$Sym10.6_cm2))),]
 
 #W2
 ggplot(subset(Sym.C, TimeP=="W2"), aes(x=Set, y=Sym10.6_cm2)) + 
@@ -377,20 +330,6 @@ ggplot(subset(Sym.C, TimeP=="M1"), aes(x=Set, y=Sym10.6_cm2)) +
 
 #M4
 ggplot(subset(Sym.C, TimeP=="M4"), aes(x=Set, y=Sym10.6_cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2)+
-  theme(axis.text.x = element_text(angle = 90))
-
-#M8
-ggplot(subset(Sym.C, TimeP=="M8"), aes(x=Set, y=Sym10.6_cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2)+
-  theme(axis.text.x = element_text(angle = 90))
-
-#M12
-ggplot(subset(Sym.C, TimeP=="M12"), aes(x=Set, y=Sym10.6_cm2)) + 
   geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
   geom_jitter(shape=16, position=position_jitter(0.1))+
   ylim(0,2)+
@@ -429,19 +368,6 @@ ggplot(subset(Sym.H, TimeP=="M4"), aes(x=Set, y=Sym10.6_cm2)) +
 
 Sym.H$RandN[which(Sym.H$TimeP=="M4" & Sym.H$Sym10.6_cm2>0.75)] #"M4_61" 
 
-#M8
-ggplot(subset(Sym.H, TimeP=="M8"), aes(x=Set, y=Sym10.6_cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,2.1)+
-  theme(axis.text.x = element_text(angle = 90))
-
-#M12
-ggplot(subset(Sym.H, TimeP=="M12"), aes(x=Set, y=Sym10.6_cm2)) + 
-  geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA)+
-  geom_jitter(shape=16, position=position_jitter(0.1))+
-  ylim(0,1)+
-  theme(axis.text.x = element_text(angle = 90))
 
 ##Remove Outliers
 Sym.H.o<-Sym.H[-c(which((Sym.H$TimeP=="M1" & Sym.H$Sym10.6_cm2>0.75) | 
