@@ -1950,7 +1950,7 @@ Tol_contrasts$Estimate[which(Tol_contrasts$Response=="Symbionts" & Tol_contrasts
 
 ## Contrast Heatmaps
 
-### Summer 1 Timepoint W2
+#### Summer 1 Timepoint W2
 ```{r}
 Tol_Pairs_W2.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="W2"),], aes(x=Response, y=Contrast, fill=Estimate))+
   geom_tile()+
@@ -1967,7 +1967,7 @@ Tol_Pairs_W2.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="W2"),],
 ```
 
 
-### Summer 2 Timepoint M1
+#### Summer 2 Timepoint M1
 ```{r}
 Tol_Pairs_M1.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M1"),], aes(x=Response, y=Contrast, fill=Estimate))+
   geom_tile()+
@@ -1984,7 +1984,7 @@ Tol_Pairs_M1.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M1"),],
 ```
 
 
-### Winter Timepoint M4
+#### Winter Timepoint M4
 ```{r}
 Tol_Pairs_M4.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M4"),], aes(x=Response, y=Contrast, fill=Estimate))+
   geom_tile()+
@@ -2001,7 +2001,7 @@ Tol_Pairs_M4.plot<-ggplot(data=Tol_contrasts[which(Tol_contrasts$TimeP=="M4"),],
 ```
 
 
-### All Timepoints
+#### All Timepoints
 ```{r}
 Tol_Pairs.plot<-ggplot(data=Tol_contrasts, aes(x=Response, y=Set, fill=Estimate))+
   geom_tile()+
@@ -2018,7 +2018,7 @@ Tol_Pairs.plot<-ggplot(data=Tol_contrasts, aes(x=Response, y=Set, fill=Estimate)
 ```
 
 
-### Significant Differences
+#### Significant Differences
 
 Subsetting Contrasts to only include contrasts with significant differences in at least one of the thermal tolerance metrics (Chlorophyll or Symbiont or Color retention)
 ```{r}
@@ -2045,6 +2045,19 @@ Tol_Pairs_sig.plot<-ggplot(data=Tol_contrasts_sig_Set, aes(x=Response, y=Set, fi
         legend.title=element_text(size=leg.title.sz), 
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
   labs(x="", y="", fill="Estimate");Tol_Pairs_sig.plot
+```
+
+
+### Proportion of Agreement
+Assessing the proportion of agreement between methods as the pairwise comparisons where two methods both find a significant difference out of the total pairwise comparisons. Calculating the proportion of agreement between Chlorophyll and Color Full Set, Chlorophyll and Color Timepoint, Symbionts and Color Full Set, Symbionts and Color Timepoint, and Chlorophyll and Symbionts. Comparing the proportion of agreement between methods of quantifying thermal tolerance.
+```{r}
+names(Tol_contrasts)
+
+##Change long to short format
+
+##Identify agreement
+
+##Calculate instances of agreement 
 ```
 
 
