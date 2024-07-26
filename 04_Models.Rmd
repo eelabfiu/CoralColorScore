@@ -49,13 +49,13 @@ BleachData<-read.csv("Outputs/BleachData.csv", header=TRUE)
 FullData<-merge(ScoreData, BleachData, all.x=TRUE)
 
 ##Set factor variables 
-FullData$TimeP<-factor(FullData$TimeP, levels=c("W1", "W2", "M1", "M4", "M8", "M12"), ordered=TRUE)
+FullData$TimeP<-factor(FullData$TimeP, levels=c("W2", "M1", "M4"), ordered=TRUE)
 FullData$Site<-factor(FullData$Site, levels=c("KL", "SS"), ordered=TRUE)
 FullData$Genotype<-factor(FullData$Genotype, levels=c("AC8", "AC10", "AC12"), ordered=TRUE)
 FullData$Treatment<-factor(FullData$Treatment, levels=c("Control", "Heat"), ordered=TRUE)
 FullData$Treat<-factor(FullData$Treat, levels=c("C", "H"), ordered=TRUE)
-FullData$AnSet<-factor(FullData$AnSet, levels=c("Initial", "Seasonal", "Annual"), ordered=TRUE)
-FullData$Season<-factor(FullData$Season, levels=c("Summer", "Winter", "Spring"), ordered=TRUE)
+FullData$Seas<-factor(FullData$Seas, levels=c("Summer1", "Summer2", "Winter"), ordered=TRUE)
+
 ```
 
 
@@ -71,9 +71,9 @@ hist(FullData$Chl_ug.cm2)
 shapiro.test(FullData$Chl_ug.cm2)
 # Not Normal
 
-#Natural log transformation 
-hist(log(FullData$Chl_ug.cm2))
-shapiro.test(log(FullData$Chl_ug.cm2))
+#Natural log+1 transformation 
+hist(log(FullData$Chl_ug.cm2+1))
+shapiro.test(log(FullData$Chl_ug.cm2+1))
 # Not Normal
 
 #Square root transformation 
@@ -90,9 +90,9 @@ hist(FullData$Sym10.6_cm2)
 shapiro.test(FullData$Sym10.6_cm2)
 # Not Normal
 
-#Natural log transformation 
-hist(log(FullData$Sym10.6_cm2))
-shapiro.test(log(FullData$Sym10.6_cm2))
+#Natural log+1 transformation 
+hist(log(FullData$Sym10.6_cm2+1))
+shapiro.test(log(FullData$Sym10.6_cm2+1))
 # Not Normal
 
 #Square root transformation 
@@ -130,35 +130,6 @@ shapiro.test((FullData$Score_TP)^2)
 
 ```
 
-
-```{r}
-##Color Score by Set
-hist(FullData$Score_Set)
-shapiro.test(FullData$Score_Set)
-# Not Normal
-
-#Square transformation 
-hist((FullData$Score_Set)^2)
-shapiro.test((FullData$Score_Set)^2)
-# Not Normal
-
-```
-
-
-```{r}
-##Color Score by Season
-hist(FullData$Score_Seas)
-shapiro.test(FullData$Score_Seas)
-# Not Normal
-
-#Square transformation 
-hist((FullData$Score_Seas)^2)
-shapiro.test((FullData$Score_Seas)^2)
-# Not Normal
-
-```
-
-
 None of the variables are normally distributed. 
 
 
@@ -167,17 +138,16 @@ Checking correlation between each Color Score calculation with traditional bleac
 ```{r}
 names(FullData)
 
-chart.Correlation(FullData[,c(9:12,16:17)], histogram=TRUE, method="spearman")
+chart.Correlation(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2")], histogram=TRUE, method="spearman")
 
 ```
 
-All metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
+Both metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
 
-For Chlorophyll concentration, Color Score calculated from the Full set has the highest correlation (.78), followed by that calculated from each Timepoint or Season individually (.75), and the lowest correlation (.71) was Color Score calculated for each Analysis set.  
+For Chlorophyll concentration, Color Score calculated from the Full set has the highest correlation (.77), yet Color Score calculated from each Timepoint is similar (.75)  
 
-For Symbiont density, Color Score calculated from either each Timepoint individually or each Analysis set had the highest correlations (0.71), followed by that calculated from the Full set (.69), then from each Season (.65).
+For Symbiont density, Color Score calculated from each Timepoint individually had the highest correlations (0.76), followed by that calculated from the Full set (.59).
 
-To avoid issues with different sample sizes across Seasons or Analysis sets, comparing models with either Color Score calculated from the Full dataset or for each Timepoint individually. 
 
 # Model Chlorophyll ~ Color
 
@@ -246,7 +216,7 @@ Residuals look good.
 
 
 ### Plot Model
-```{r}
+```{r Model of Chl vs Color Full Set}
 Chl_Full.mod.plot<-plot(ggpredict(Chl_Full.glm.gam.l , terms="Score_Full"), rawdata=TRUE, colors="darkgreen", jitter=TRUE)+
   labs(x="Color Score Full Set", y=expression(paste('Chlorophyll (\u03BCg cm'^-2*") ")), title=NULL)+
   theme_classic()+
@@ -254,7 +224,7 @@ Chl_Full.mod.plot<-plot(ggpredict(Chl_Full.glm.gam.l , terms="Score_Full"), rawd
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=17, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.37 "))),size=sig.sz, hjust = 0);Chl_Full.mod.plot
+        annotate("text", x=16, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.37 "))),size=sig.sz, hjust = 0);Chl_Full.mod.plot
 
 
 ```
@@ -272,11 +242,10 @@ Chl_TP.glm.gaus.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=gaussian(link=
 Chl_TP.glm.gam.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="log"))
 Chl_TP.glm.gam.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="inverse"))
 
-Chl_TP.glm.inv<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
 Chl_TP.glm.inv.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "log"))
 
 #AIC Model Comparison
-AIC(Chl_TP.glm.gaus, Chl_TP.glm.gaus.l, Chl_TP.glm.gaus.i, Chl_TP.glm.gam.l, Chl_TP.glm.gam.i,  Chl_TP.glm.inv, Chl_TP.glm.inv.l)
+AIC(Chl_TP.glm.gaus, Chl_TP.glm.gaus.l, Chl_TP.glm.gaus.i, Chl_TP.glm.gam.l, Chl_TP.glm.gam.i, Chl_TP.glm.inv.l)
 ```
 
 Gamma distribution with log link has the best model fit (lowest AIC)
@@ -303,7 +272,7 @@ Chl_TP.glm.res$Resid.Dev<-c(summary(Chl_TP.glm.gam.l)$deviance, summary(Chl_TP.g
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 43% (Eta squared 0.43) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 40% (Eta squared 0.40) of the variance. 
 
 
 #### Check Residuals
@@ -325,7 +294,7 @@ Residuals look good.
 
 ### Plot Model
 
-```{r}
+```{r Model of Chl vs Color by Timepoint}
 Chl_TP.mod.plot<-plot(ggpredict(Chl_TP.glm.gam.l , terms="Score_TP"), rawdata=TRUE, colors="lightgreen", jitter=TRUE)+
   labs(x="Color Score by Timepoint", y=expression(paste('Chlorophyll (\u03BCg cm'^-2*") ")), title=NULL)+
   theme_classic()+
@@ -333,7 +302,7 @@ Chl_TP.mod.plot<-plot(ggpredict(Chl_TP.glm.gam.l , terms="Score_TP"), rawdata=TR
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=19, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.43 "))),size=sig.sz, hjust = 0);Chl_TP.mod.plot
+        annotate("text", x=19, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Chl_TP.mod.plot
 
 ```
 
@@ -384,7 +353,7 @@ Sym_Full.glm.res$Resid.Dev<-c(summary(Sym_Full.glm.gam.l)$deviance, summary(Sym_
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 34% (Eta squared 0.34) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 23% (Eta squared 0.23) of the variance. 
 
 
 #### Check Residuals
@@ -405,7 +374,7 @@ Residuals look good.
 
 
 ### Plot Model
-```{r}
+```{r Model of Sym vs Color Full Set}
 Sym_Full.mod.plot<-plot(ggpredict(Sym_Full.glm.gam.l , terms="Score_Full"), rawdata=TRUE, colors="darkorange3", jitter=TRUE)+
   labs(x="Color Score Full Set", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
   theme_classic()+
@@ -413,7 +382,7 @@ Sym_Full.mod.plot<-plot(ggpredict(Sym_Full.glm.gam.l , terms="Score_Full"), rawd
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=17, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.34 "))),size=sig.sz, hjust = 0);Sym_Full.mod.plot
+        annotate("text", x=16, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.23 "))),size=sig.sz, hjust = 0);Sym_Full.mod.plot
 
 
 ```
@@ -438,7 +407,7 @@ Sym_TP.glm.inv.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=inverse.gaussi
 AIC(Sym_TP.glm.gaus, Sym_TP.glm.gaus.l, Sym_TP.glm.gaus.i, Sym_TP.glm.gam.l, Sym_TP.glm.gam.i,  Sym_TP.glm.inv, Sym_TP.glm.inv.l)
 ```
 
-Gamma distribution with log link has the best model fit (lowest AIC)
+Gamma distribution with inverse link has the best model fit (lowest AIC). Will compare with log link for comparability across responses.
 
 
 ### Model Results
@@ -462,7 +431,7 @@ Sym_TP.glm.res$Resid.Dev<-c(summary(Sym_TP.glm.gam.l)$deviance, summary(Sym_TP.g
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 43% (Eta squared 0.43) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 40% (Eta squared 0.40) of the variance. 
 
 
 #### Check Residuals
@@ -484,7 +453,7 @@ Residuals look good.
 
 ### Plot Model
 
-```{r}
+```{r Model of Sym vs Color by Timepoint}
 Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TRUE, colors="darkorange", jitter=TRUE)+
   labs(x="Color Score by Timepoint", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
   theme_classic()+
@@ -492,7 +461,7 @@ Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TR
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=19, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.43 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
+        annotate("text", x=19, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
 
 ```
 
@@ -507,6 +476,8 @@ write.csv(FullData, "Outputs/FullData.csv", row.names=FALSE)
 
 # Figures
 
+### Figure 2 Bleaching vs Color Score
+
 ```{r}
 ##Create Panel
 Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
@@ -518,7 +489,7 @@ Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
                      label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/Bleaching_Color_Models.png", plot=Bleach_Color_Models_fig, dpi=300, width=10, height=8, units="in")
+ggsave(filename="Figures/Figure2_Bleaching_Color_Models.png", plot=Bleach_Color_Models_fig, dpi=300, width=10, height=8, units="in")
  
 ```
 
@@ -545,4 +516,3 @@ TableS1_Mod.res$p.value<-round(TableS1_Mod.res$p.value, 4)
 write.csv(TableS1_Mod.res, "Tables/TableS1_Metric_Comparison_GLM_Results.csv", row.names=FALSE)
 
 ```
-
