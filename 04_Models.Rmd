@@ -376,7 +376,7 @@ Residuals look good.
 ### Plot Model
 ```{r Model of Sym vs Color Full Set}
 Sym_Full.mod.plot<-plot(ggpredict(Sym_Full.glm.gam.l , terms="Score_Full"), rawdata=TRUE, colors="darkorange3", jitter=TRUE)+
-  labs(x="Color Score Full Set", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
+  labs(x="Color Score Full Set", y=expression(paste('Symbionts (*10'^-6* ' cm'^-2*") ")), title=NULL)+
   theme_classic()+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
@@ -455,13 +455,226 @@ Residuals look good.
 
 ```{r Model of Sym vs Color by Timepoint}
 Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TRUE, colors="darkorange", jitter=TRUE)+
-  labs(x="Color Score by Timepoint", y=expression(paste('Symbionts (cells *10'^-6* ' cm'^-2*") ")), title=NULL)+
+  labs(x="Color Score by Timepoint", y=expression(paste('Symbionts (*10'^-6* ' cm'^-2*") ")), title=NULL)+
   theme_classic()+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
         annotate("text", x=19, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
+
+```
+
+
+# Model Predictions
+Using similar models of Bleaching Metric ~ Color Score developed for Summer 1 (Timepoint W2) to test the ability to use Color Score to predict the Bleaching Metric in Summer 2 (Timepoint M1) and Winter (Timepoint M4) seasonal timepoints.
+
+## Model Chl ~ Color 
+
+### Develop Summer 1 Model
+```{r}
+##Model with Gamma Log Link
+Chl_W2.glm<-glm(Chl_ug.cm2~Score_TP, data=subset(FullData, TimeP=="W2"), family=Gamma(link="log"))
+
+
+##Check Residuals
+#Distribution 
+plot(density(resid(Chl_W2.glm)))
+
+#Q-Q plot
+qqnorm(resid(Chl_W2.glm)); qqline(resid(Chl_W2.glm))
+
+##Residuals vs Fitted Values
+plot(fitted(Chl_W2.glm), resid(Chl_W2.glm))
+
+##Model Results
+summary(Chl_W2.glm)
+
+#Effect Size of Color Score
+eta_squared(Chl_W2.glm, partial=FALSE)
+
+##Save model results
+Chl_W2.glm.res<-data.frame(summary(Chl_W2.glm)$coefficients)
+Chl_W2.glm.res$Predictor<-c("Intercept", "Color Summer 1")
+Chl_W2.glm.res$EtaSq<-c(NA,eta_squared(Chl_W2.glm, partial=FALSE)$Eta2)
+Chl_W2.glm.res$Response<-rep("Chlorophyll Summer 1", nrow(Chl_W2.glm.res))
+Chl_W2.glm.res<-Chl_W2.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Chl_W2.glm.res<-Chl_W2.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Chl_W2.glm.res$Null.Dev<-c(summary(Chl_W2.glm)$null.deviance, summary(Chl_W2.glm)$df.null)
+Chl_W2.glm.res$Resid.Dev<-c(summary(Chl_W2.glm)$deviance, summary(Chl_W2.glm)$df.residual)
+
+```
+
+
+### Predict Summer 2
+```{r}
+##Predicted values on Response scale (exp())
+M1_Chl_predict<-data.frame(Predicted=exp(predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response")))
+
+##Compare with Measured values 
+M1_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M1")]
+
+##Test correlation between Predicted and Measured values
+cor.test(M1_Chl_predict$Predicted, M1_Chl_predict$Measured)
+
+```
+
+The measured values of Summer 2 Chlorophyll are significantly (p < 0.001) correlated with those predicted from Color Score using the model developed in Summer 1.
+
+
+#### Plot Predicted vs Measured
+```{r}
+Chl_M1.pred.plot<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="lightgreen", pch=15)+ 
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y=expression(paste('Measured Chlorophyll (\u03BCg cm'^-2*") ")), title="Summer")+
+  theme_classic()+
+  ylim(0,2)+
+  xlim(1,2)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1, y=1.5, label="r = 0.756  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Chl_M1.pred.plot
+
+```
+
+
+### Predict Winter
+```{r}
+##Predicted values on Response scale (exp())
+M4_Chl_predict<-data.frame(Predicted=exp(predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response")))
+
+##Compare with Measured values 
+M4_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M4")]
+
+##Test correlation between Predicted and Measured values
+cor.test(M4_Chl_predict$Predicted, M4_Chl_predict$Measured)
+
+```
+
+The measured values of Winter Chlorophyll are significantly (p < 0.001) correlated with those predicted from Color Score using the model developed in Summer 1.
+
+
+#### Plot Predicted vs Measured
+```{r}
+Chl_M4.pred.plot<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="lightgreen", pch=17)+ 
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y=expression(paste('Measured Chlorophyll (\u03BCg cm'^-2*") ")), title="Winter")+
+  theme_classic()+
+  ylim(0,2)+
+  xlim(1,2)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1, y=1.5, label="r = 0.696  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Chl_M4.pred.plot
+
+```
+
+
+## Model Sym ~ Color 
+
+### Develop Summer 1 Model
+```{r}
+##Model with Gamma Log Link
+Sym_W2.glm<-glm(Sym10.6_cm2~Score_TP, data=subset(FullData, TimeP=="W2"), family=Gamma(link="log"))
+
+
+##Check Residuals
+#Distribution 
+plot(density(resid(Sym_W2.glm)))
+
+#Q-Q plot
+qqnorm(resid(Sym_W2.glm)); qqline(resid(Sym_W2.glm))
+
+##Residuals vs Fitted Values
+plot(fitted(Sym_W2.glm), resid(Sym_W2.glm))
+
+##Model Results
+summary(Sym_W2.glm)
+
+#Effect Size of Color Score
+eta_squared(Sym_W2.glm, partial=FALSE)
+
+##Save model results
+Sym_W2.glm.res<-data.frame(summary(Sym_W2.glm)$coefficients)
+Sym_W2.glm.res$Predictor<-c("Intercept", "Color Summer 1")
+Sym_W2.glm.res$EtaSq<-c(NA,eta_squared(Sym_W2.glm, partial=FALSE)$Eta2)
+Sym_W2.glm.res$Response<-rep("Symbionts Summer 1", nrow(Sym_W2.glm.res))
+Sym_W2.glm.res<-Sym_W2.glm.res %>% dplyr::rename( p.value = "Pr...t..")
+Sym_W2.glm.res<-Sym_W2.glm.res %>% dplyr::rename( Std.Error = "Std..Error")
+Sym_W2.glm.res$Null.Dev<-c(summary(Sym_W2.glm)$null.deviance, summary(Sym_W2.glm)$df.null)
+Sym_W2.glm.res$Resid.Dev<-c(summary(Sym_W2.glm)$deviance, summary(Sym_W2.glm)$df.residual)
+
+```
+
+
+### Predict Summer 2
+```{r}
+##Predicted values on Response scale (exp())
+M1_Sym_predict<-data.frame(Predicted=exp(predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response")))
+
+##Compare with Measured values 
+M1_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M1")]
+
+##Test correlation between Predicted and Measured values
+cor.test(M1_Sym_predict$Predicted, M1_Sym_predict$Measured)
+
+```
+
+The measured values of Summer 2 Symbiont Density are significantly (p < 0.001) correlated with those predicted from Color Score using the model developed in Summer 1.
+
+
+#### Plot Predicted vs Measured
+```{r}
+Sym_M1.pred.plot<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="darkorange", pch=15)+ 
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y=expression(paste('Measured Symbionts (*10'^-6* ' cm'^-2*") ")), title="Summer")+
+  theme_classic()+
+  xlim(1,2.15)+
+  ylim(0, 1.15)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1, y=.8, label="r = 0.763  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Sym_M1.pred.plot
+
+```
+
+
+### Predict Winter
+```{r}
+##Predicted values on Response scale (exp())
+M4_Sym_predict<-data.frame(Predicted=exp(predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response")))
+
+##Compare with Measured values 
+M4_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M4")]
+
+##Test correlation between Predicted and Measured values
+cor.test(M4_Sym_predict$Predicted, M4_Sym_predict$Measured)
+
+```
+
+The measured values of Winter Symbiont Density are significantly (p < 0.001) correlated with those predicted from Color Score using the model developed in Summer 1.
+
+
+#### Plot Predicted vs Measured
+```{r}
+Sym_M4.pred.plot<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="darkorange", pch=17)+ 
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y=expression(paste('Measured Symbionts (*10'^-6* ' cm'^-2*") ")), title="Winter")+
+  theme_classic()+
+  xlim(1.2,1.9)+
+  ylim(0, .7)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1.2, y=.6, label="r = 0.610  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Sym_M4.pred.plot
 
 ```
 
@@ -477,7 +690,6 @@ write.csv(FullData, "Outputs/FullData.csv", row.names=FALSE)
 # Figures
 
 ### Figure 2 Bleaching vs Color Score
-
 ```{r}
 ##Create Panel
 Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
@@ -493,11 +705,88 @@ ggsave(filename="Figures/Figure2_Bleaching_Color_Models.png", plot=Bleach_Color_
  
 ```
 
+
+### Figure 3 Predicted vs Measured Bleaching
+
+#### Update for Panel
+```{r}
+Chl_M1.pred.plot.fig<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="lightgreen", pch=15)+ 
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Summer")+
+  theme_classic()+
+  ylim(0,2)+
+  xlim(1,2)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1, y=1.5, label="r = 0.756  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+
+Chl_M4.pred.plot.fig<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="lightgreen", pch=17)+ 
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Winter")+
+  theme_classic()+
+  ylim(0,2)+
+  xlim(1,2)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+        annotate("text", x=1, y=1.5, label="r = 0.696  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+
+Sym_M1.pred.plot.fig<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="darkorange", pch=15)+ 
+  labs(x=expression(paste('Predicted Symbionts (cells *10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
+  theme_classic()+
+  xlim(1,2.15)+
+  ylim(0, 1.15)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=1, y=1, label="r = 0.763  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+
+Sym_M4.pred.plot.fig<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
+    geom_point(size=point.sz, colour="darkorange", pch=17)+ 
+  labs(x=expression(paste('Predicted Symbionts (cells *10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
+  theme_classic()+
+  xlim(1.2,1.9)+
+  ylim(0, .7)+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
+        annotate("text", x=1.2, y=.6, label="r = 0.610  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+
+```
+
+
+#### Figure 3
+```{r}
+##Create Panel
+Bleach_Predict_fig<-plot_grid(Chl_M1.pred.plot.fig, Chl_M4.pred.plot.fig,
+                     Sym_M1.pred.plot.fig, Sym_M4.pred.plot.fig, 
+                     nrow=2, ncol=2, 
+                     rel_widths=1, rel_heights=1, 
+                     labels=c("A", "B", "C", "D"),
+                     label_size=panel.lab.sz,
+                     label_fontface = "bold")
+
+##Save Figure
+ggsave(filename="Figures/Figure3_Bleaching_Predicted_Measured.png", plot=Bleach_Predict_fig, dpi=300, width=10, height=8, units="in")
+ 
+```
+
+
 # Tables
 
+### Table S1
 ```{r}
 ##Combine Results Tables
-TableS1_glm.res<-rbind(Chl_FUll.glm.res, Chl_TP.glm.res, Sym_Full.glm.res, Sym_TP.glm.res)
+TableS1_glm.res<-rbind(Chl_FUll.glm.res, Chl_TP.glm.res, Sym_Full.glm.res, Sym_TP.glm.res, 
+                       Chl_W2.glm.res, Sym_W2.glm.res)
 
 ##Organize
 names(TableS1_glm.res)
