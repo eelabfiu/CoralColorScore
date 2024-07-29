@@ -2054,25 +2054,304 @@ Assessing the proportion of agreement between methods as the pairwise comparison
 names(Tol_contrasts)
 
 ##Change long to short format
+Tol_contrasts.agree<-Tol_contrasts %>% pivot_wider(names_from="Response", values_from=c("p", "Estimate"), id_cols=c("TimeP", "Contrast", "Set"))
+
+##Convert p values to binary
+#0: No significant difference (p>0.05) detected in that pairwise contrast
+#1: Significant difference (p<0.05) detected in that pairwise contrast
+Tol_contrasts.agree[,c(4:7)]<-ifelse(Tol_contrasts.agree[,c(4:7)]<0.05, 1, 0)
+
+##Convert estimates to Greater or Less
+#Greater: Positive estimates indicate A>B in the Contrast
+#Less: Negative estimates indicate A<B in the Contrast
+Tol_contrasts.agree[,c(8:11)]<-ifelse(Tol_contrasts.agree[,c(8:11)]<0, "Less", "Greater")
 
 ##Identify agreement
+#1: Both metrics identified a significant difference in that pairwise contrast OR Neither metric identified a significant difference
+#0: One metrics identified a significant difference in that pairwise contrast
+#For each matching case (1), confirm matching Estimates
+Tol_contrasts.agree$Chl.Sym<-ifelse(Tol_contrasts.agree$p_Chlorophyll==1 &
+Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Symbionts &
+Tol_contrasts.agree$Estimate_Chlorophyll==Tol_contrasts.agree$Estimate_Symbionts, 1, 
+ifelse(Tol_contrasts.agree$p_Chlorophyll==0 & 
+         Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Symbionts, 1, 0))
 
-##Calculate instances of agreement 
+Tol_contrasts.agree$Chl.ColF<-ifelse(Tol_contrasts.agree$p_Chlorophyll==1 &                                     Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Color_FullSet &
+Tol_contrasts.agree$Estimate_Chlorophyll==Tol_contrasts.agree$Estimate_Color_FullSet, 1, 
+ifelse(Tol_contrasts.agree$p_Chlorophyll==0 &
+         Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Color_FullSet, 1, 0))
+
+Tol_contrasts.agree$Chl.ColTP<-ifelse(Tol_contrasts.agree$p_Chlorophyll==1 & 
+Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Color_TP &                          Tol_contrasts.agree$Estimate_Chlorophyll==Tol_contrasts.agree$Estimate_Color_TP, 1, 
+ifelse(Tol_contrasts.agree$p_Chlorophyll==0 &
+         Tol_contrasts.agree$p_Chlorophyll==Tol_contrasts.agree$p_Color_TP, 1, 0))
+
+Tol_contrasts.agree$Sym.ColF<-ifelse(Tol_contrasts.agree$p_Symbionts==1 &
+Tol_contrasts.agree$p_Symbionts==Tol_contrasts.agree$p_Color_FullSet & Tol_contrasts.agree$Estimate_Symbionts==Tol_contrasts.agree$Estimate_Color_FullSet, 1,
+ifelse(Tol_contrasts.agree$p_Symbionts==0 &
+         Tol_contrasts.agree$p_Symbionts==Tol_contrasts.agree$p_Color_FullSet, 1, 0))
+
+Tol_contrasts.agree$Sym.ColTP<-ifelse(Tol_contrasts.agree$p_Symbionts==1 &
+Tol_contrasts.agree$p_Symbionts==Tol_contrasts.agree$p_Color_TP & Tol_contrasts.agree$Estimate_Symbionts==Tol_contrasts.agree$Estimate_Color_TP, 1,
+ifelse(Tol_contrasts.agree$p_Symbionts==0 &
+         Tol_contrasts.agree$p_Symbionts==Tol_contrasts.agree$p_Color_TP, 1, 0))
+
+Tol_contrasts.agree$ColF.ColTP<-ifelse(Tol_contrasts.agree$p_Color_FullSet==1 &
+Tol_contrasts.agree$p_Color_FullSet==Tol_contrasts.agree$p_Color_TP & Tol_contrasts.agree$Estimate_Color_FullSet==Tol_contrasts.agree$Estimate_Color_TP, 1, 
+ifelse(Tol_contrasts.agree$p_Color_FullSet==0 &
+         Tol_contrasts.agree$p_Color_FullSet==Tol_contrasts.agree$p_Color_TP, 1, 0))
+
+##Convert to long to calculate instances of agreement
+Tol_contrasts.agree.long<-Tol_contrasts.agree %>% pivot_longer(cols=c("Chl.Sym", "Chl.ColF", "Chl.ColTP", "Sym.ColF", "Sym.ColTP", "ColF.ColTP"), names_to="Compare", values_to="Agree")
+
+##Sum Cases of Agreement
+Tol_contrasts.agree.sum<-aggregate(Tol_contrasts.agree.long$Agree, list(Tol_contrasts.agree.long$Compare), sum)
+names(Tol_contrasts.agree.sum)<-c("Compare", "Agree")
+
+##Total Pairwise Comparisons
+Tol_contrasts.agree.sum$Total<-aggregate(Tol_contrasts.agree.long$Agree, list(Tol_contrasts.agree.long$Compare), function(x) length(x))[,2]
 ```
+
+
+#### Compare Proportion Agreement
+```{r}
+prop.test(Tol_contrasts.agree.sum$Agree, Tol_contrasts.agree.sum$Total)
+
+```
+
+No significant difference in the proportion of agreement in detecting pairwise differences in thermal tolerance across comparisons of traditional bleaching or color score methods (Pearson's chi-squared test p-value = 0.3013)
 
 
 # Figures
 
 ### Figure S2 Tolerance Across Metrics
+
+#### Update for Panel
+```{r}
+Tol_Chl_W2_SG.plot.fig<-ggplot(Tol_Chl_W2_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  ggtitle("Summer 1")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.text=element_text(size=leg.txt.sz),
+         legend.title=element_text(size=leg.title.sz), 
+         legend.box.background = element_rect(color = "black"),
+         legend.position="top", 
+         legend.direction="horizontal",
+         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="Proportion Chlorophyll Retained")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_W2_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE)
+
+
+Tol_Chl_M1_SG.plot.fig<-ggplot(Tol_Chl_M1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  ggtitle("Summer 2")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.text=element_text(size=leg.txt.sz),
+         legend.title=element_text(size=leg.title.sz), 
+         legend.box.background = element_rect(color = "black"),
+         legend.position="top", 
+         legend.direction="horizontal",
+         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M1_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE)
+
+
+Tol_Chl_M4_SG.plot.fig<-ggplot(Tol_Chl_M4_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  ggtitle("Winter")+
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.text=element_text(size=leg.txt.sz),
+         legend.title=element_text(size=leg.title.sz), 
+         legend.box.background = element_rect(color = "black"),
+         legend.position="top", 
+         legend.direction="horizontal",
+         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
+  labs(x="", y="")+
+  ylim(0, 1)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Chl_M4_lm.p,  y.position=0.55, step.increase=0.20, label="Sig", hide.ns=TRUE)
+
+
+Tol_Sym_W2_SG.plot.fig<-ggplot(Tol_Sym_W2_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="Site and Genotype", y="Proportion Symbionts Retained")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_W2_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE)
+
+
+Tol_Sym_M1_SG.plot.fig<-ggplot(Tol_Sym_M1_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="Site and Genotype", y="")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_M1_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE)
+
+
+Tol_Sym_M4_SG.plot.fig<-ggplot(Tol_Sym_M4_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="Site and Genotype", y="")+
+  ylim(0, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_Sym_M4_lm.p,  y.position=1.1, step.increase=0.15, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreF_W2_SG.plot.fig<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="Proportion Color Retained (Full)")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.9, step.increase=0.35, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreF_M1_SG.plot.fig<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=1.1, step.increase=0.2, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreF_M4_SG.plot.fig<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=1.1, step.increase=0.22, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreTP_W2_SG.plot.fig<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="Proportion Color Retained (Split)")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=1, step.increase=0.45, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreTP_M1_SG.plot.fig<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=1.05, step.increase=0.3, label="Sig", hide.ns=TRUE)
+
+
+Tol_ScoreTP_M4_SG.plot.fig<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
+  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
+  geom_point(size=point.sz)+ 
+  theme_classic()+
+  theme( axis.title.x = element_text(size = axis.title.sz), 
+         axis.title.y = element_text(size = axis.title.sz), 
+         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+         legend.position="none")+
+  labs(x="", y="")+
+  ylim(0.25, 1.5)+ 
+  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
+  scale_color_manual(values = Geno.colors.o)+ 
+  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=1.1, step.increase=0.4, label="Sig", hide.ns=TRUE)
+
+
+```
+
+
+
+#### Figure S2
 ```{r}
 ##Create Panel
-Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot, Tol_Chl_M1_SG.plot, Tol_Chl_M4_SG.plot,
-                  Tol_ScoreF_W2_SG.plot, Tol_ScoreF_M1_SG.plot, Tol_ScoreF_M4_SG.plot,
-                  Tol_ScoreTP_W2_SG.plot, Tol_ScoreTP_M1_SG.plot, Tol_ScoreTP_M4_SG.plot,
-                  Tol_Sym_W2_SG.plot, Tol_Sym_M1_SG.plot, Tol_Sym_M4_SG.plot,
-                        nrow=4, ncol=3, 
+Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot.fig, Tol_Chl_M1_SG.plot.fig, Tol_Chl_M4_SG.plot.fig,
+                  Tol_ScoreF_W2_SG.plot.fig, Tol_ScoreF_M1_SG.plot.fig, Tol_ScoreF_M4_SG.plot.fig,
+                  Tol_ScoreTP_W2_SG.plot.fig, Tol_ScoreTP_M1_SG.plot.fig, Tol_ScoreTP_M4_SG.plot.fig,
+                  Tol_Sym_W2_SG.plot.fig, Tol_Sym_M1_SG.plot.fig, Tol_Sym_M4_SG.plot.fig,
+                        nrow=4, ncol=3, byrow=TRUE,
                         rel_widths=1,
-                        rel_heights=1, 
+                        rel_heights=c(1, 0.85, 0.85, 0.85), 
                         labels=c("A", "B", "C", 
                                  "D", "E", "F", 
                                  "G", "H", "I", 
@@ -2081,7 +2360,7 @@ Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot, Tol_Chl_M1_SG.plot, Tol_Chl_M4_SG.p
                         label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/FigureS2_Tolerance_Across_Metrics.png", plot=Tolerance_fig, dpi=300, width=18, height=24, units="in")
+ggsave(filename="Figures/FigureS2_Tolerance_Across_Metrics.png", plot=Tolerance_fig, dpi=300, width=14, height=20, units="in")
 
 ```
 
@@ -2096,7 +2375,7 @@ ggsave(filename="Figures/Figure3_Tolerance_Heatmap.png", plot=Tol_Pairs.plot, dp
 
 # Tables
 
-### Linear Model Results
+### Table S2 Linear Model Results
 ```{r}
 ##Combine Results Tables
 TableS2_Tol.lm.res<-rbind(Tol_Chl_W2_lm.res, Tol_Chl_M1_lm.res, Tol_Chl_M4_lm.res,
@@ -2104,9 +2383,12 @@ TableS2_Tol.lm.res<-rbind(Tol_Chl_W2_lm.res, Tol_Chl_M1_lm.res, Tol_Chl_M4_lm.re
                         Tol_ScoreF_W2_lm.res, Tol_ScoreF_M1_lm.res, Tol_ScoreF_M4_lm.res,
                     Tol_ScoreTP_W2_lm.res, Tol_ScoreTP_M1_lm.res, Tol_ScoreTP_M4_lm.res)
 
+##Add a Season Variable
+TableS2_Tol.lm.res$Season<-ifelse(TableS2_Tol.lm.res$TimeP=="W2", "Summer1", ifelse(TableS2_Tol.lm.res$TimeP=="M1", "Summer2", ifelse(TableS2_Tol.lm.res$TimeP=="M4", "Winter" , NA)))
+
 ##Organize
 names(TableS2_Tol.lm.res)
-TableS2_Tol.lm.res<-TableS2_Tol.lm.res[,c("TimeP", "Response", "Predictor", "DF", "Sum.Sq", "Mean.Sq", "F.value", "p.value", "EtaSq")]
+TableS2_Tol.lm.res<-TableS2_Tol.lm.res[,c("TimeP", "Season", "Response", "Predictor", "DF", "Sum.Sq", "Mean.Sq", "F.value", "p.value", "EtaSq")]
 
 #Round to 4 digits
 TableS2_Tol.lm.res$Sum.Sq<-round(TableS2_Tol.lm.res$Sum.Sq, 4)
@@ -2121,14 +2403,20 @@ write.csv(TableS2_Tol.lm.res, "Tables/TableS2_Tolerance_LM_Results.csv", row.nam
 ```
 
 
-### Pairwise Comparison Results
+### Table S3 Pairwise Comparison Results
 ```{r}
 ##Pairwise Results Table
 TableS3_Tol.pairwise<-Tol_contrasts
 
+##Add a Season Variable
+TableS3_Tol.pairwise$Season<-ifelse(TableS3_Tol.pairwise$TimeP=="W2", "Summer1", ifelse(TableS3_Tol.pairwise$TimeP=="M1", "Summer2", ifelse(TableS3_Tol.pairwise$TimeP=="M4", "Winter" , NA)))
+
+##Re-order by Seasonal Timepoint
+TableS3_Tol.pairwise<- TableS3_Tol.pairwise %>% arrange(as.numeric(TimeP))
+
 ##Organize
 names(TableS3_Tol.pairwise)
-TableS3_Tol.pairwise<-TableS3_Tol.pairwise[,c("TimeP", "Response", "Contrast", "Estimate", "SE", "df", "t.ratio", "p")]
+TableS3_Tol.pairwise<-TableS3_Tol.pairwise[,c("TimeP", "Season", "Response", "Contrast", "Estimate", "SE", "df", "t.ratio", "p")]
 TableS3_Tol.pairwise<-TableS3_Tol.pairwise %>% dplyr::rename( DF = df) %>% dplyr::rename( p.value = p)
 
 #Round to 4 digits
