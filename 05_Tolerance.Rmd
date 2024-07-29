@@ -2365,10 +2365,10 @@ ggsave(filename="Figures/FigureS2_Tolerance_Across_Metrics.png", plot=Tolerance_
 ```
 
 
-### Figure 3 Contrasts Heatmap
+### Figure 4 Contrasts Heatmap
 ```{r}
 ##Save Figure
-ggsave(filename="Figures/Figure3_Tolerance_Heatmap.png", plot=Tol_Pairs.plot, dpi=300, width=8, height=12, units="in")
+ggsave(filename="Figures/Figure4_Tolerance_Heatmap.png", plot=Tol_Pairs.plot, dpi=300, width=8, height=12, units="in")
 
 ```
 
