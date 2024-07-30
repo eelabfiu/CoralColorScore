@@ -25,7 +25,7 @@ if (!require("effectsize")) install.packages("effectsize")
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("ggeffects")) install.packages("ggeffects")
 if (!require("cowplot")) install.packages("cowplot")
-if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics")
+if (!require("Hmisc")) install.packages("Hmisc")
 
 ##Load Packages
 library(ggplot2) #Required for plotting
@@ -33,7 +33,7 @@ library(effectsize) #Required to eta_squared effect sizes
 library(dplyr) #Required for dataframe cleanup
 library(ggeffects) #Required for ggpredict to plot model results
 library(cowplot) #Required for arranging ggplots 
-library(PerformanceAnalytics) #Required for correlation matrix
+library(Hmisc) #Required for correlation matrix with p values
 ```
 Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
@@ -135,11 +135,10 @@ None of the variables are normally distributed.
 
 ### Checking Correlation
 Checking correlation between each Color Score calculation with traditional bleaching metrics. Using Spearman correlation due to non-normality. 
+
 ```{r}
 names(FullData)
-
-chart.Correlation(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2")], histogram=TRUE, method="spearman")
-
+rcorr(as.matrix(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2")], type="spearman"))
 ```
 
 Both metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
@@ -508,14 +507,14 @@ Chl_W2.glm.res$Resid.Dev<-c(summary(Chl_W2.glm)$deviance, summary(Chl_W2.glm)$df
 
 ### Predict Summer 2
 ```{r}
-##Predicted values on Response scale (exp())
-M1_Chl_predict<-data.frame(Predicted=exp(predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response")))
+##Predicted values on Response scale 
+M1_Chl_predict<-data.frame(Predicted=predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response"))
 
 ##Compare with Measured values 
 M1_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M1")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M1_Chl_predict$Predicted, M1_Chl_predict$Measured)
+cor.test(M1_Chl_predict$Predicted, M1_Chl_predict$Measured, method="spearman")
 
 ```
 
@@ -526,30 +525,30 @@ The measured values of Summer 2 Chlorophyll are significantly (p < 0.001) correl
 ```{r}
 Chl_M1.pred.plot<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="lightgreen", pch=15)+ 
-  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y=expression(paste('Measured Chlorophyll (\u03BCg cm'^-2*") ")), title="Summer")+
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Summer")+
   theme_classic()+
   ylim(0,2)+
-  xlim(1,2)+
+  xlim(0,1)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1, y=1.5, label="r = 0.756  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Chl_M1.pred.plot
+  annotate("text",  x=0, y=1.5, label=expression(bolditalic(paste(rho, "= 0.844  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M1.pred.plot
 
 ```
 
 
 ### Predict Winter
 ```{r}
-##Predicted values on Response scale (exp())
-M4_Chl_predict<-data.frame(Predicted=exp(predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response")))
+##Predicted values on Response scale
+M4_Chl_predict<-data.frame(Predicted=predict(Chl_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response"))
 
 ##Compare with Measured values 
 M4_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M4")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M4_Chl_predict$Predicted, M4_Chl_predict$Measured)
+cor.test(M4_Chl_predict$Predicted, M4_Chl_predict$Measured, method="spearman")
 
 ```
 
@@ -560,16 +559,16 @@ The measured values of Winter Chlorophyll are significantly (p < 0.001) correlat
 ```{r}
 Chl_M4.pred.plot<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="lightgreen", pch=17)+ 
-  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y=expression(paste('Measured Chlorophyll (\u03BCg cm'^-2*") ")), title="Winter")+
+  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Winter")+
   theme_classic()+
   ylim(0,2)+
-  xlim(1,2)+
+  xlim(0,1)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1, y=1.5, label="r = 0.696  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Chl_M4.pred.plot
+  annotate("text",  x=0, y=1.5, label=expression(bolditalic(paste(rho, "= 0.697  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M4.pred.plot
 
 ```
 
@@ -613,14 +612,14 @@ Sym_W2.glm.res$Resid.Dev<-c(summary(Sym_W2.glm)$deviance, summary(Sym_W2.glm)$df
 
 ### Predict Summer 2
 ```{r}
-##Predicted values on Response scale (exp())
-M1_Sym_predict<-data.frame(Predicted=exp(predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response")))
+##Predicted values on Response scale
+M1_Sym_predict<-data.frame(Predicted=predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M1")])), type="response"))
 
 ##Compare with Measured values 
 M1_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M1")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M1_Sym_predict$Predicted, M1_Sym_predict$Measured)
+cor.test(M1_Sym_predict$Predicted, M1_Sym_predict$Measured, method="spearman")
 
 ```
 
@@ -631,30 +630,30 @@ The measured values of Summer 2 Symbiont Density are significantly (p < 0.001) c
 ```{r}
 Sym_M1.pred.plot<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=15)+ 
-  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y=expression(paste('Measured Symbionts (*10'^-6* ' cm'^-2*") ")), title="Summer")+
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title="Summer")+
   theme_classic()+
-  xlim(1,2.15)+
-  ylim(0, 1.15)+
+  xlim(0, 1.13)+
+  ylim(0, 1.13)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1, y=.8, label="r = 0.763  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Sym_M1.pred.plot
+   annotate("text",  x=0, y=.9, label=expression(bolditalic(paste(rho, "= 0.789  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M1.pred.plot
 
 ```
 
 
 ### Predict Winter
 ```{r}
-##Predicted values on Response scale (exp())
-M4_Sym_predict<-data.frame(Predicted=exp(predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response")))
+##Predicted values on Response scale 
+M4_Sym_predict<-data.frame(Predicted=predict(Sym_W2.glm, newdata=data.frame(Score_TP=c(FullData$Score_TP[which(FullData$TimeP=="M4")])), type="response"))
 
 ##Compare with Measured values 
 M4_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M4")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M4_Sym_predict$Predicted, M4_Sym_predict$Measured)
+cor.test(M4_Sym_predict$Predicted, M4_Sym_predict$Measured, method="spearman")
 
 ```
 
@@ -665,16 +664,16 @@ The measured values of Winter Symbiont Density are significantly (p < 0.001) cor
 ```{r}
 Sym_M4.pred.plot<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=17)+ 
-  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y=expression(paste('Measured Symbionts (*10'^-6* ' cm'^-2*") ")), title="Winter")+
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title="Winter")+
   theme_classic()+
-  xlim(1.2,1.9)+
-  ylim(0, .7)+
+ xlim(0, .8)+
+  ylim(0, .8)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1.2, y=.6, label="r = 0.610  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0);Sym_M4.pred.plot
+   annotate("text",  x=0, y=.6, label=expression(bolditalic(paste(rho, "= 0.633  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M4.pred.plot
 
 ```
 
@@ -710,55 +709,30 @@ ggsave(filename="Figures/Figure2_Bleaching_Color_Models.png", plot=Bleach_Color_
 
 #### Update for Panel
 ```{r}
-Chl_M1.pred.plot.fig<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
-    geom_point(size=point.sz, colour="lightgreen", pch=15)+ 
-  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Summer")+
-  theme_classic()+
-  ylim(0,2)+
-  xlim(1,2)+
-  theme(axis.title.x = element_text(size = axis.title.sz), 
-        axis.title.y = element_text(size = axis.title.sz), 
-        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
-        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1, y=1.5, label="r = 0.756  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
-
-Chl_M4.pred.plot.fig<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
-    geom_point(size=point.sz, colour="lightgreen", pch=17)+ 
-  labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Winter")+
-  theme_classic()+
-  ylim(0,2)+
-  xlim(1,2)+
-  theme(axis.title.x = element_text(size = axis.title.sz), 
-        axis.title.y = element_text(size = axis.title.sz), 
-        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
-        plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-        annotate("text", x=1, y=1.5, label="r = 0.696  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
 
 Sym_M1.pred.plot.fig<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=15)+ 
-  labs(x=expression(paste('Predicted Symbionts (cells *10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
   theme_classic()+
-  xlim(1,2.15)+
-  ylim(0, 1.15)+
+  xlim(0, 1.13)+
+  ylim(0, 1.13)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=1, y=1, label="r = 0.763  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+   annotate("text",  x=0, y=.9, label=expression(bolditalic(paste(rho, "= 0.789  p < 0.001"))),size=sig.sz, hjust = 0)
 
 Sym_M4.pred.plot.fig<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=17)+ 
-  labs(x=expression(paste('Predicted Symbionts (cells *10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
+  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
   theme_classic()+
-  xlim(1.2,1.9)+
-  ylim(0, .7)+
+ xlim(0, .8)+
+  ylim(0, .8)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=1.2, y=.6, label="r = 0.610  p < 0.001",  fontface="bold.italic", size=sig.sz, hjust = 0)
+   annotate("text",  x=0, y=.6, label=expression(bolditalic(paste(rho, "= 0.633  p < 0.001"))),size=sig.sz, hjust = 0)
 
 ```
 
@@ -766,7 +740,7 @@ Sym_M4.pred.plot.fig<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
 #### Figure 3
 ```{r}
 ##Create Panel
-Bleach_Predict_fig<-plot_grid(Chl_M1.pred.plot.fig, Chl_M4.pred.plot.fig,
+Bleach_Predict_fig<-plot_grid(Chl_M1.pred.plot, Chl_M4.pred.plot,
                      Sym_M1.pred.plot.fig, Sym_M4.pred.plot.fig, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
