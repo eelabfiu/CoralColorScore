@@ -2122,6 +2122,85 @@ prop.test(Tol_contrasts.agree.sum$Agree, Tol_contrasts.agree.sum$Total)
 No significant difference in the proportion of agreement in detecting pairwise differences in thermal tolerance across comparisons of traditional bleaching or color score methods (Pearson's chi-squared test p-value = 0.3013)
 
 
+### Compare Agreement across Seasons
+
+```{r}
+##Sum Cases of Agreement by Comparison and Timepoint
+Tol_contrasts.agree.sum.tp<-aggregate(Tol_contrasts.agree.long$Agree, list(Tol_contrasts.agree.long$TimeP, Tol_contrasts.agree.long$Compare), sum)
+names(Tol_contrasts.agree.sum.tp)<-c("TimeP", "Compare", "Agree")
+
+##Total Pairwise Comparisons
+Tol_contrasts.agree.sum.tp$Total<-aggregate(Tol_contrasts.agree.long$Agree, list(Tol_contrasts.agree.long$TimeP, Tol_contrasts.agree.long$Compare), function(x) length(x))[,3]
+
+
+```
+
+
+#### Chl vs Sym
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.Chl.Sym<-subset(Tol_contrasts.agree.sum.tp, Compare=="Chl.Sym")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.Chl.Sym$Agree, Tol_contrasts.agree.Chl.Sym$Total)
+
+```
+
+
+#### Chl vs Color Full
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.Chl.ColF<-subset(Tol_contrasts.agree.sum.tp, Compare=="Chl.ColF")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.Chl.ColF$Agree, Tol_contrasts.agree.Chl.ColF$Total)
+
+```
+
+#### Chl vs Color Timepoint
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.Chl.ColTP<-subset(Tol_contrasts.agree.sum.tp, Compare=="Chl.ColTP")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.Chl.ColTP$Agree, Tol_contrasts.agree.Chl.ColTP$Total)
+
+```
+
+
+#### Sym vs Color Full
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.Sym.ColF<-subset(Tol_contrasts.agree.sum.tp, Compare=="Sym.ColF")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.Sym.ColF$Agree, Tol_contrasts.agree.Sym.ColF$Total)
+
+```
+
+
+#### Sym vs Color Timepoint
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.Sym.ColTP<-subset(Tol_contrasts.agree.sum.tp, Compare=="Sym.ColTP")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.Sym.ColTP$Agree, Tol_contrasts.agree.Sym.ColTP$Total)
+
+```
+
+
+#### Color Full vs Color Timepoint
+```{r}
+##Subset by Comparison
+Tol_contrasts.agree.ColF.ColTP<-subset(Tol_contrasts.agree.sum.tp, Compare=="ColF.ColTP")
+
+##Compare Proportions between Timepoints
+prop.test(Tol_contrasts.agree.ColF.ColTP$Agree, Tol_contrasts.agree.ColF.ColTP$Total)
+
+```
+
+
 # Figures
 
 ### Figure S2 Tolerance Across Metrics
