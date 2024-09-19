@@ -485,7 +485,7 @@ write.csv(ColorData, "Outputs/ScoreData.csv", row.names=FALSE)
 
 # Figures
 
-### Figure 1 Panels D and E
+### Figure 1 Panels d and e
 ```{r}
 ##Color Score PCA Plot
 Color.PCA.plot_fig1<-ggplot(data = Color.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
@@ -529,12 +529,12 @@ Score.boxplot_fig1<-ggplot(ColorData, aes(x=Treatment, y=Score_Full)) +
 Color_Score_Method_fig<-plot_grid(Color.PCA.plot_fig1, Score.boxplot_fig1,
                      nrow=1, ncol=2, 
                      rel_widths=1, rel_heights=1, 
-                     labels=c("D", "E"),
-                     label_size=panel.lab.sz,
+                     labels=c("d", "e"),
+                     label_size=panel.lab.sz-1,
                      label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/Figure1DE_Color_Score_Method.png", plot=Color_Score_Method_fig, dpi=300, width=10, height=5, units="in")
+ggsave(filename="Figures/Figure1de_Color_Score_Method.png", plot=Color_Score_Method_fig, dpi=300, width=10, height=5, units="in")
 
 ```
 
@@ -548,8 +548,8 @@ Color_Score_PCA_fig<-plot_grid(Color.PCA.plot, Color_W2.PCA.plot,
                      Color_M1.PCA.plot, Color_M4.PCA.plot, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
-                     labels=c("A", "B", "C", "D"),
-                     label_size=panel.lab.sz,
+                     labels=c("a", "b", "c", "d"),
+                     label_size=panel.lab.sz-2,
                      label_fontface = "bold")
 
 ##Save Figure

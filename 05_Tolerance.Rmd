@@ -2378,7 +2378,7 @@ Tol_ScoreTP_W2_SG.plot.fig<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_T
          axis.text.x=element_text(size=axis.txt.sz, colour="black"),
          axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
          legend.position="none")+
-  labs(x="", y="Proportion Color Retained (Split)")+
+  labs(x="", y="Proportion Color Retained (TP)")+
   ylim(0.25, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -2431,10 +2431,10 @@ Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot.fig, Tol_Chl_M1_SG.plot.fig, Tol_Chl
                         nrow=4, ncol=3, byrow=TRUE,
                         rel_widths=1,
                         rel_heights=c(1, 0.85, 0.85, 0.85), 
-                        labels=c("A", "B", "C", 
-                                 "D", "E", "F", 
-                                 "G", "H", "I", 
-                                 "J", "K", "L"), 
+                        labels=c("a", "b", "c", 
+                                 "d", "e", "f", 
+                                 "g", "h", "i", 
+                                 "j", "k", "l"), 
                         label_size=panel.lab.sz, 
                         label_fontface = "bold")
 

@@ -62,18 +62,3 @@ cap.sz=0.3
 plot.title.sz=20
 
 ```
-
-
-# Experimental Design
-
-### Load and Organize Data
-```{r}
-
-```
-
-
-# Acute Thermal Tolerance Assay
-```{r}
-
-```
-

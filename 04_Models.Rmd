@@ -695,8 +695,8 @@ Bleach_Color_Models_fig<-plot_grid(Chl_Full.mod.plot, Chl_TP.mod.plot,
                      Sym_Full.mod.plot, Sym_TP.mod.plot, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
-                     labels=c("A", "B", "C", "D"),
-                     label_size=panel.lab.sz,
+                     labels=c("a", "b", "c", "d"),
+                     label_size=panel.lab.sz-2,
                      label_fontface = "bold")
 
 ##Save Figure
@@ -744,8 +744,8 @@ Bleach_Predict_fig<-plot_grid(Chl_M1.pred.plot, Chl_M4.pred.plot,
                      Sym_M1.pred.plot.fig, Sym_M4.pred.plot.fig, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
-                     labels=c("A", "B", "C", "D"),
-                     label_size=panel.lab.sz,
+                     labels=c("a", "b", "c", "d"),
+                     label_size=panel.lab.sz-2,
                      label_fontface = "bold")
 
 ##Save Figure
