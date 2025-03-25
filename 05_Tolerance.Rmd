@@ -80,9 +80,9 @@ Calculating retention as proportion remaining relative to corresponding control 
 ```{r}
 ##Calculate averages for Control Treatment for each Site, Genotype, Timepoint, and Season
 names(FullData_C)
-FullData_C.a<-aggregate(FullData_C[,c(10:11, 13:14)], list(FullData_C$Site, FullData_C$Genotype, FullData_C$TimeP, FullData_C$Seas), mean, na.action = na.omit)
+FullData_C.a<-aggregate(FullData_C[,c(9:10, 13:14)], list(FullData_C$Site, FullData_C$Genotype, FullData_C$TimeP, FullData_C$Seas), mean, na.action = na.omit)
 names(FullData_C.a)[1:4]<-c("Site", "Genotype", "TimeP", "Seas")
-names(FullData_C.a)[5:8]<-paste(names(FullData_C)[c(10:11, 13:14)], "C", sep="_")
+names(FullData_C.a)[5:8]<-paste(names(FullData_C)[c(9:10, 13:14)], "C", sep="_")
 
 ##Merge Control Averages with Heated Samples
 #Merges by Site, Genotype, Timepoint, and Season
@@ -268,7 +268,6 @@ Tol_Chl_W2_SG<-summarySE(TolData_W2, measurevar="Chl.prop", groupvars=c("Site.Ge
 Tol_Chl_W2_SG.plot<-ggplot(Tol_Chl_W2_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Chlorophyll Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -280,7 +279,7 @@ Tol_Chl_W2_SG.plot<-ggplot(Tol_Chl_W2_SG, aes(x=Site.Geno, y=Chl.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Chlorophyll Retained")+
   ylim(0, 1)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -390,7 +389,6 @@ Tol_Chl_M1_SG<-summarySE(TolData_M1, measurevar="Chl.prop", groupvars=c("Site.Ge
 Tol_Chl_M1_SG.plot<-ggplot(Tol_Chl_M1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Chlorophyll Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -402,7 +400,7 @@ Tol_Chl_M1_SG.plot<-ggplot(Tol_Chl_M1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Chlorophyll Retained")+
   ylim(0, 1)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -518,7 +516,6 @@ Tol_Chl_M4_SG<-summarySE(TolData_M4, measurevar="Chl.prop", groupvars=c("Site.Ge
 Tol_Chl_M4_SG.plot<-ggplot(Tol_Chl_M4_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Chlorophyll Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -530,7 +527,7 @@ Tol_Chl_M4_SG.plot<-ggplot(Tol_Chl_M4_SG, aes(x=Site.Geno, y=Chl.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Chlorophyll Retained")+
   ylim(0, 1)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -711,7 +708,6 @@ Tol_Sym_W2_SG<-summarySE(TolData_W2, measurevar="Sym.prop", groupvars=c("Site.Ge
 Tol_Sym_W2_SG.plot<-ggplot(Tol_Sym_W2_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Symbiont Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -723,7 +719,7 @@ Tol_Sym_W2_SG.plot<-ggplot(Tol_Sym_W2_SG, aes(x=Site.Geno, y=Sym.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Symbionts Retained")+
   ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -839,7 +835,6 @@ Tol_Sym_M1_SG<-summarySE(TolData_M1, measurevar="Sym.prop", groupvars=c("Site.Ge
 Tol_Sym_M1_SG.plot<-ggplot(Tol_Sym_M1_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Symbiont Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -851,7 +846,7 @@ Tol_Sym_M1_SG.plot<-ggplot(Tol_Sym_M1_SG, aes(x=Site.Geno, y=Sym.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Symbionts Retained")+
  ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -973,7 +968,6 @@ Tol_Sym_M4_SG<-summarySE(TolData_M4, measurevar="Sym.prop", groupvars=c("Site.Ge
 Tol_Sym_M4_SG.plot<-ggplot(Tol_Sym_M4_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Symbiont Retention")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -985,7 +979,7 @@ Tol_Sym_M4_SG.plot<-ggplot(Tol_Sym_M4_SG, aes(x=Site.Geno, y=Sym.prop, colour=Ge
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
+  labs(x="", y="Proportion Symbionts Retained")+
   ylim(0, 1.5)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
@@ -1037,8 +1031,6 @@ plot(fitted(Tol_ScoreF_lm), resid(Tol_ScoreF_lm))
 
 ```
 
-Residuals are not great, need to check for other modeling options for Color Full Set.
-
 
 ### Model Results
 
@@ -1068,9 +1060,20 @@ Strong influence of Timepoint, including interactions with Genotype. Will analyz
 ##Check normality
 hist(TolData_W2$Score_Full.prop)
 shapiro.test(TolData_W2$Score_Full.prop)
-#Normal
+#Not normal
+
+##Try square transformation
+hist((TolData_W2$Score_Full.prop)^2)
+shapiro.test((TolData_W2$Score_Full.prop)^2)
+#Not normal
+
+##Try cubed transformation
+hist((TolData_W2$Score_Full.prop)^3)
+shapiro.test((TolData_W2$Score_Full.prop)^3)
+#Not normal
 
 ##Model as a function of Site and Genotype
+##Model with no transformation and check residuals
 Tol_ScoreF_W2_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_W2)
 
 ```
@@ -1163,7 +1166,6 @@ Tol_ScoreF_W2_SG<-summarySE(TolData_W2, measurevar="Score_Full.prop", groupvars=
 Tol_ScoreF_W2_SG.plot<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention Full Set")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1175,11 +1177,11 @@ Tol_ScoreF_W2_SG.plot<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
-  ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (Full)")+
+  ylim(0.6, 1.2)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.9, step.increase=0.35, label="Sig", hide.ns=TRUE); Tol_ScoreF_W2_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=1, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreF_W2_SG.plot
 
 ```
 
@@ -1191,20 +1193,9 @@ Tol_ScoreF_W2_SG.plot<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.pr
 ##Check normality
 hist(TolData_M1$Score_Full.prop)
 shapiro.test(TolData_M1$Score_Full.prop)
-#Not normal
-
-##Try square transformation
-hist((TolData_M1$Score_Full.prop)^2)
-shapiro.test((TolData_M1$Score_Full.prop)^2)
-#Not normal
-
-##Try cubed transformation
-hist((TolData_M1$Score_Full.prop)^3)
-shapiro.test((TolData_M1$Score_Full.prop)^3)
-#Not normal
+#Normal
 
 ##Model as a function of Site and Genotype
-##Model with no transformation and check residuals
 Tol_ScoreF_M1_lm<-lm(Score_Full.prop~Site+Genotype+Site:Genotype, data=TolData_M1)
 
 ```
@@ -1246,7 +1237,7 @@ Tol_ScoreF_M1_lm.res<-Tol_ScoreF_M1_lm.res %>% dplyr::rename( p.value = "Pr..F."
 
 ```
 
-Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
 
 
 #### Pairwise
@@ -1296,7 +1287,6 @@ Tol_ScoreF_M1_SG<-summarySE(TolData_M1, measurevar="Score_Full.prop", groupvars=
 Tol_ScoreF_M1_SG.plot<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention Full Set")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1308,11 +1298,11 @@ Tol_ScoreF_M1_SG.plot<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
- ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (Full)")+
+  ylim(0.6, 1.2)+  
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=1.1, step.increase=0.2, label="Sig", hide.ns=TRUE); Tol_ScoreF_M1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=1, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreF_M1_SG.plot
 
 ```
 
@@ -1379,7 +1369,7 @@ Tol_ScoreF_M4_lm.res<-Tol_ScoreF_M4_lm.res %>% dplyr::rename( p.value = "Pr..F."
 
 ```
 
-Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
 
 
 
@@ -1430,7 +1420,6 @@ Tol_ScoreF_M4_SG<-summarySE(TolData_M4, measurevar="Score_Full.prop", groupvars=
 Tol_ScoreF_M4_SG.plot<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention Full Set")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1442,11 +1431,11 @@ Tol_ScoreF_M4_SG.plot<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
-  ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (Full)")+
+  ylim(0.6, 1.2)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=1.1, step.increase=0.22, label="Sig", hide.ns=TRUE); Tol_ScoreF_M4_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=1.05, step.increase=0.35, label="Sig", hide.ns=TRUE); Tol_ScoreF_M4_SG.plot
 
 ```
 
@@ -1494,7 +1483,6 @@ plot(fitted(Tol_ScoreTP_lm), resid(Tol_ScoreTP_lm))
 
 ```
 
-Residuals are not great, need to check for other modeling options for Color by Timepoint.
 
 
 ### Model Results
@@ -1569,7 +1557,7 @@ Tol_ScoreTP_W2_lm.res<-Tol_ScoreTP_W2_lm.res %>% dplyr::rename( p.value = "Pr..F
 
 ```
 
-Significant effect of Site and Genotype. Still checking Site*Genotype for comparability across Timepoints.
+Significant effect of Genotype. Still checking Site*Genotype for comparability across Timepoints.
 
 
 
@@ -1620,7 +1608,6 @@ Tol_ScoreTP_W2_SG<-summarySE(TolData_W2, measurevar="Score_TP.prop", groupvars=c
 Tol_ScoreTP_W2_SG.plot<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention by Timepoint")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1632,11 +1619,11 @@ Tol_ScoreTP_W2_SG.plot<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
-  ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (TP)")+
+  ylim(0.6, 1.2)+  
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=1, step.increase=0.45, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W2_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=1, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreTP_W2_SG.plot
 
 ```
 
@@ -1648,20 +1635,9 @@ Tol_ScoreTP_W2_SG.plot<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.pr
 ##Check normality
 hist(TolData_M1$Score_TP.prop)
 shapiro.test(TolData_M1$Score_TP.prop)
-#Not normal
-
-##Try square transformation
-hist((TolData_M1$Score_TP.prop)^2)
-shapiro.test((TolData_M1$Score_TP.prop)^2)
-#Not normal
-
-##Try cubed transformation
-hist((TolData_M1$Score_TP.prop)^3)
-shapiro.test((TolData_M1$Score_TP.prop)^3)
-#Not normal
+#Normal
 
 ##Model as a function of Site and Genotype
-##Model with no transformation and check residuals
 Tol_ScoreTP_M1_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M1)
 
 ```
@@ -1753,7 +1729,6 @@ Tol_ScoreTP_M1_SG<-summarySE(TolData_M1, measurevar="Score_TP.prop", groupvars=c
 Tol_ScoreTP_M1_SG.plot<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention by Timepoint")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1765,11 +1740,11 @@ Tol_ScoreTP_M1_SG.plot<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
- ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (TP)")+
+  ylim(0.6, 1.2)+  
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=1.05, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M1_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=1, step.increase=0.25, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M1_SG.plot
 
 ```
 
@@ -1781,20 +1756,9 @@ Tol_ScoreTP_M1_SG.plot<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.pr
 ##Check normality
 hist(TolData_M4$Score_TP.prop)
 shapiro.test(TolData_M4$Score_TP.prop)
-#Not Normal
-
-##Try square transformation
-hist((TolData_M4$Score_TP.prop)^2)
-shapiro.test((TolData_M4$Score_TP.prop)^2)
-#Not Normal
-
-##Try cubed transformation
-hist((TolData_M4$Score_TP.prop)^3)
-shapiro.test((TolData_M4$Score_TP.prop)^3)
-#Not Normal
+#Normal
 
 ##Model as a function of Site and Genotype
-##Model with no transformation and check residuals
 Tol_ScoreTP_M4_lm<-lm(Score_TP.prop~Site+Genotype+Site:Genotype, data=TolData_M4)
 
 ```
@@ -1887,7 +1851,6 @@ Tol_ScoreTP_M4_SG<-summarySE(TolData_M4, measurevar="Score_TP.prop", groupvars=c
 Tol_ScoreTP_M4_SG.plot<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
   geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
   geom_point(size=point.sz)+ 
-   ggtitle("Color Retention by Timepoint")+
   theme_classic()+
   theme( axis.title.x = element_text(size = axis.title.sz), 
          axis.title.y = element_text(size = axis.title.sz), 
@@ -1899,11 +1862,11 @@ Tol_ScoreTP_M4_SG.plot<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.pr
         legend.position="bottom", 
         legend.direction="horizontal",
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Retained")+
-  ylim(0, 1.5)+ 
+  labs(x="", y="Proportion Color Retained (TP)")+
+  ylim(0.6, 1.2)+ 
   scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
   scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=1.1, step.increase=0.4, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M4_SG.plot
+  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=1, step.increase=0.3, label="Sig", hide.ns=TRUE); Tol_ScoreTP_M4_SG.plot
 
 ```
 
@@ -2119,7 +2082,7 @@ prop.test(Tol_contrasts.agree.sum$Agree, Tol_contrasts.agree.sum$Total)
 
 ```
 
-No significant difference in the proportion of agreement in detecting pairwise differences in thermal tolerance across comparisons of traditional bleaching or color score methods (Pearson's chi-squared test p-value = 0.3013)
+No significant difference in the proportion of agreement in detecting pairwise differences in thermal tolerance across comparisons of traditional bleaching or color score methods (Pearson's chi-squared test p-value = 0.7281)
 
 
 ### Compare Agreement across Seasons
@@ -2207,227 +2170,49 @@ prop.test(Tol_contrasts.agree.ColF.ColTP$Agree, Tol_contrasts.agree.ColF.ColTP$T
 
 #### Update for Panel
 ```{r}
-Tol_Chl_W2_SG.plot.fig<-ggplot(Tol_Chl_W2_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  ggtitle("Summer 1")+
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.text=element_text(size=leg.txt.sz),
-         legend.title=element_text(size=leg.title.sz), 
-         legend.box.background = element_rect(color = "black"),
-         legend.position="top", 
-         legend.direction="horizontal",
-         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="Proportion Chlorophyll Retained")+
-  ylim(0, 1)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Chl_W2_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE)
+
+##Top row
+Tol_Chl_W2_SG.plot<-Tol_Chl_W2_SG.plot + ggtitle("Summer 1") +  labs(x="")+ 
+  theme(legend.position="top", legend.direction="horizontal", plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))
+
+Tol_Chl_M1_SG.plot<-Tol_Chl_M1_SG.plot + ggtitle("Summer 2") +  labs(x="", y="")+ 
+  theme(legend.position="top", legend.direction="horizontal", plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))
+  
+Tol_Chl_M4_SG.plot<-Tol_Chl_M4_SG.plot + ggtitle("Winter") +  labs(x="", y="")+ 
+  theme(legend.position="top", legend.direction="horizontal", plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))
+  
+##Bottom row
+Tol_Sym_W2_SG.plot<-Tol_Sym_W2_SG.plot+labs(x="Site and Genotype")+ theme(legend.position="none")
+
+Tol_Sym_M1_SG.plot<-Tol_Sym_M1_SG.plot+labs(x="Site and Genotype", y="")+ theme(legend.position="none")
+
+Tol_Sym_M4_SG.plot<-Tol_Sym_M4_SG.plot+labs(x="Site and Genotype", y="")+ theme(legend.position="none")
 
 
-Tol_Chl_M1_SG.plot.fig<-ggplot(Tol_Chl_M1_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  ggtitle("Summer 2")+
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.text=element_text(size=leg.txt.sz),
-         legend.title=element_text(size=leg.title.sz), 
-         legend.box.background = element_rect(color = "black"),
-         legend.position="top", 
-         legend.direction="horizontal",
-         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="")+
-  ylim(0, 1)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Chl_M1_lm.p,  y.position=0.4, step.increase=0.25, label="Sig", hide.ns=TRUE)
+##Color scores
+Tol_ScoreF_W2_SG.plot<-Tol_ScoreF_W2_SG.plot+labs(x="")+ theme(legend.position="none")
+
+Tol_ScoreF_M1_SG.plot<-Tol_ScoreF_M1_SG.plot+labs(x="", y="")+ theme(legend.position="none")
+
+Tol_ScoreF_M4_SG.plot<-Tol_ScoreF_M4_SG.plot+labs(x="", y="")+ theme(legend.position="none")
 
 
-Tol_Chl_M4_SG.plot.fig<-ggplot(Tol_Chl_M4_SG, aes(x=Site.Geno, y=Chl.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Chl.prop-se, ymax=Chl.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  ggtitle("Winter")+
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.text=element_text(size=leg.txt.sz),
-         legend.title=element_text(size=leg.title.sz), 
-         legend.box.background = element_rect(color = "black"),
-         legend.position="top", 
-         legend.direction="horizontal",
-         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  labs(x="", y="")+
-  ylim(0, 1)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Chl_M4_lm.p,  y.position=0.55, step.increase=0.20, label="Sig", hide.ns=TRUE)
+Tol_ScoreTP_W2_SG.plot<-Tol_ScoreTP_W2_SG.plot+labs(x="")+ theme(legend.position="none")
 
+Tol_ScoreTP_M1_SG.plot<-Tol_ScoreTP_M1_SG.plot+labs(x="", y="")+ theme(legend.position="none")
 
-Tol_Sym_W2_SG.plot.fig<-ggplot(Tol_Sym_W2_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="Site and Genotype", y="Proportion Symbionts Retained")+
-  ylim(0, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Sym_W2_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE)
-
-
-Tol_Sym_M1_SG.plot.fig<-ggplot(Tol_Sym_M1_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="Site and Genotype", y="")+
-  ylim(0, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Sym_M1_lm.p,  y.position=0.95, step.increase=0.15, label="Sig", hide.ns=TRUE)
-
-
-Tol_Sym_M4_SG.plot.fig<-ggplot(Tol_Sym_M4_SG, aes(x=Site.Geno, y=Sym.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Sym.prop-se, ymax=Sym.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="Site and Genotype", y="")+
-  ylim(0, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_Sym_M4_lm.p,  y.position=1.1, step.increase=0.15, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreF_W2_SG.plot.fig<-ggplot(Tol_ScoreF_W2_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="Proportion Color Retained (Full)")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_W2_lm.p,  y.position=0.9, step.increase=0.35, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreF_M1_SG.plot.fig<-ggplot(Tol_ScoreF_M1_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M1_lm.p,  y.position=1.1, step.increase=0.2, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreF_M4_SG.plot.fig<-ggplot(Tol_ScoreF_M4_SG, aes(x=Site.Geno, y=Score_Full.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_Full.prop-se, ymax=Score_Full.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreF_M4_lm.p,  y.position=1.1, step.increase=0.22, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreTP_W2_SG.plot.fig<-ggplot(Tol_ScoreTP_W2_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="Proportion Color Retained (TP)")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_W2_lm.p,  y.position=1, step.increase=0.45, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreTP_M1_SG.plot.fig<-ggplot(Tol_ScoreTP_M1_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M1_lm.p,  y.position=1.05, step.increase=0.3, label="Sig", hide.ns=TRUE)
-
-
-Tol_ScoreTP_M4_SG.plot.fig<-ggplot(Tol_ScoreTP_M4_SG, aes(x=Site.Geno, y=Score_TP.prop, colour=Genotype)) + 
-  geom_errorbar(aes(ymin=Score_TP.prop-se, ymax=Score_TP.prop+se), width=cap.sz, linewidth=bar.sz)+
-  geom_point(size=point.sz)+ 
-  theme_classic()+
-  theme( axis.title.x = element_text(size = axis.title.sz), 
-         axis.title.y = element_text(size = axis.title.sz), 
-         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
-         legend.position="none")+
-  labs(x="", y="")+
-  ylim(0.25, 1.5)+ 
-  scale_x_discrete(labels=c("","Klein","","","Something Special",""))+
-  scale_color_manual(values = Geno.colors.o)+ 
-  stat_pvalue_manual(data=Tol_ScoreTP_M4_lm.p,  y.position=1.1, step.increase=0.4, label="Sig", hide.ns=TRUE)
-
+Tol_ScoreTP_M4_SG.plot<-Tol_ScoreTP_M4_SG.plot+labs(x="", y="")+ theme(legend.position="none")
 
 ```
-
 
 
 #### Figure S2
 ```{r}
 ##Create Panel
-Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot.fig, Tol_Chl_M1_SG.plot.fig, Tol_Chl_M4_SG.plot.fig,
-                  Tol_ScoreF_W2_SG.plot.fig, Tol_ScoreF_M1_SG.plot.fig, Tol_ScoreF_M4_SG.plot.fig,
-                  Tol_ScoreTP_W2_SG.plot.fig, Tol_ScoreTP_M1_SG.plot.fig, Tol_ScoreTP_M4_SG.plot.fig,
-                  Tol_Sym_W2_SG.plot.fig, Tol_Sym_M1_SG.plot.fig, Tol_Sym_M4_SG.plot.fig,
+Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot, Tol_Chl_M1_SG.plot, Tol_Chl_M4_SG.plot,
+                  Tol_ScoreF_W2_SG.plot, Tol_ScoreF_M1_SG.plot, Tol_ScoreF_M4_SG.plot,
+                  Tol_ScoreTP_W2_SG.plot, Tol_ScoreTP_M1_SG.plot, Tol_ScoreTP_M4_SG.plot,
+                  Tol_Sym_W2_SG.plot, Tol_Sym_M1_SG.plot, Tol_Sym_M4_SG.plot,
                         nrow=4, ncol=3, byrow=TRUE,
                         rel_widths=1,
                         rel_heights=c(1, 0.85, 0.85, 0.85), 
