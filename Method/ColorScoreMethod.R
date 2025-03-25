@@ -4,11 +4,11 @@
 ####Load Required R Packages####
 ##Install Packages if Needed
 if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("vegan")) install.packages("vegan")
+if (!require("MASS")) install.packages("MASS")
 
 ##Load Packages
 library("ggplot2")
-library("vegan")
+library("MASS")
 
 
 #### Load and Organize Data ####
@@ -44,20 +44,33 @@ Color$Blue.Norm.Coral <- Color$Blue.Coral/Color$Blue.Standard
 
 #### Calculate Color Score ####
 
-##Create matrix of standardized colors
-Color.mat <- as.matrix(cbind(Color$Red.Norm.Coral,Color$Green.Norm.Coral,Color$Blue.Norm.Coral))
+##Create dataset of standardized colors
+Color.data <- Color[,c("Red.Norm.Coral", "Green.Norm.Coral", "Blue.Norm.Coral")]
 
 ##Set row names to sample ID
-rownames(Color.mat) <- Color$ID
-
-##Create a Distance Matrix for PCA
-Color.dist <- vegdist(Color.mat, method="euclidean", na.rm=TRUE)
+rownames(Color.data) <- Color$ID
 
 ##Run Principal Components Analysis
-Color.PCA <- princomp(Color.dist) 
+Color.PCA <- prcomp(Color, scale.=TRUE) 
 
-##Extract PC1 as Color Score
-Color$Score<-Color.PCA$scores[,1]
+##Extract PC Scores
+Color.PCA.scores <- as.data.frame(Color.PCA$x)
+Color.PCA.scores$ID<-rownames(Color.PCA.scores)
+
+##Merge with Color Data for LDA
+Color.PCA.scores<-merge(Color.PCA.scores, Color)
+
+##LDA on PCA Scores
+Color.LDA_PCA<-lda(Treatment~PC1+PC2+PC3, data=Color.PCA.scores)
+
+##Predict
+Color.pLDA_PCA<-predict(object=Color.LDA_PCA, newdata=Color.PCA.scores)
+
+##Save LD1 Scores
+Color.LDA_PCA.scores<-data.frame(ID=Color.PCA.scores$ID, Score=Color.pLDA_PCA$x)
+
+##Merge with Color Data for Comparison
+Color<-merge(Color, Color.LDA_PCA.scores)
 
 
 #### Color Score QC ####
