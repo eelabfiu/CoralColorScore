@@ -143,9 +143,9 @@ rcorr(as.matrix(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2
 
 Both metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
 
-For Chlorophyll concentration, Color Score calculated from the Full set has the highest correlation (.77), yet Color Score calculated from each Timepoint is similar (.75)  
+The two metrics of Color Score are highly correlated with each other (0.90).
 
-For Symbiont density, Color Score calculated from each Timepoint individually had the highest correlations (0.76), followed by that calculated from the Full set (.59).
+Color Score calculated from the Full set and Color Score calculated from each Timepoint are similar (.74) in their correlations with Chlorophyll concentration (0.74) and with Symbiont density (0.60-0.63). Additionally, these are on par with the correlation between Chlorophyll and Symbionts (0.60)
 
 
 # Model Chlorophyll ~ Color
@@ -162,12 +162,8 @@ Chl_Full.glm.gaus.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=gaussian(l
 Chl_Full.glm.gam.l<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=Gamma(link="log"))
 Chl_Full.glm.gam.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=Gamma(link="inverse"))
 
-Chl_Full.glm.inv<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
-Chl_Full.glm.inv.l<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "log"))
-Chl_Full.glm.inv.i<-glm(Chl_ug.cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "inverse"))
-
 #AIC Model Comparison
-AIC(Chl_Full.glm.gaus, Chl_Full.glm.gaus.l, Chl_Full.glm.gaus.i, Chl_Full.glm.gam.l, Chl_Full.glm.gam.i,  Chl_Full.glm.inv, Chl_Full.glm.inv.l, Chl_Full.glm.inv.i)
+AIC(Chl_Full.glm.gaus, Chl_Full.glm.gaus.l, Chl_Full.glm.gaus.i, Chl_Full.glm.gam.l, Chl_Full.glm.gam.i)
 ```
 
 Gamma distribution with log link has the best model fit (lowest AIC)
@@ -194,7 +190,7 @@ Chl_FUll.glm.res$Resid.Dev<-c(summary(Chl_Full.glm.gam.l)$deviance, summary(Chl_
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 37% (Eta squared 0.37) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 55% (Eta squared 0.55) of the variance. 
 
 
 #### Check Residuals
@@ -223,7 +219,7 @@ Chl_Full.mod.plot<-plot(ggpredict(Chl_Full.glm.gam.l , terms="Score_Full"), rawd
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=16, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.37 "))),size=sig.sz, hjust = 0);Chl_Full.mod.plot
+        annotate("text", x=18, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.55 "))),size=sig.sz, hjust = 0);Chl_Full.mod.plot
 
 
 ```
@@ -241,10 +237,8 @@ Chl_TP.glm.gaus.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=gaussian(link=
 Chl_TP.glm.gam.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="log"))
 Chl_TP.glm.gam.i<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=Gamma(link="inverse"))
 
-Chl_TP.glm.inv.l<-glm(Chl_ug.cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "log"))
-
 #AIC Model Comparison
-AIC(Chl_TP.glm.gaus, Chl_TP.glm.gaus.l, Chl_TP.glm.gaus.i, Chl_TP.glm.gam.l, Chl_TP.glm.gam.i, Chl_TP.glm.inv.l)
+AIC(Chl_TP.glm.gaus, Chl_TP.glm.gaus.l, Chl_TP.glm.gaus.i, Chl_TP.glm.gam.l, Chl_TP.glm.gam.i)
 ```
 
 Gamma distribution with log link has the best model fit (lowest AIC)
@@ -271,7 +265,7 @@ Chl_TP.glm.res$Resid.Dev<-c(summary(Chl_TP.glm.gam.l)$deviance, summary(Chl_TP.g
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 40% (Eta squared 0.40) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 54% (Eta squared 0.54) of the variance. 
 
 
 #### Check Residuals
@@ -301,7 +295,7 @@ Chl_TP.mod.plot<-plot(ggpredict(Chl_TP.glm.gam.l , terms="Score_TP"), rawdata=TR
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=19, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Chl_TP.mod.plot
+        annotate("text", x=20, y=-.4, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.54 "))),size=sig.sz, hjust = 0);Chl_TP.mod.plot
 
 ```
 
@@ -320,15 +314,12 @@ Sym_Full.glm.gaus.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=gaussian(
 Sym_Full.glm.gam.l<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=Gamma(link="log"))
 Sym_Full.glm.gam.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=Gamma(link="inverse"))
 
-Sym_Full.glm.inv<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
-Sym_Full.glm.inv.l<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "log"))
-Sym_Full.glm.inv.i<-glm(Sym10.6_cm2~Score_Full, data=FullData, family=inverse.gaussian(link = "inverse"))
 
 #AIC Model Comparison
-AIC(Sym_Full.glm.gaus, Sym_Full.glm.gaus.l, Sym_Full.glm.gaus.i, Sym_Full.glm.gam.l, Sym_Full.glm.gam.i,  Sym_Full.glm.inv, Sym_Full.glm.inv.l, Sym_Full.glm.inv.i)
+AIC(Sym_Full.glm.gaus, Sym_Full.glm.gaus.l, Sym_Full.glm.gaus.i, Sym_Full.glm.gam.l, Sym_Full.glm.gam.i)
 ```
 
-Gamma distribution with inverse link has the best model fit (lowest AIC). Will compare with log link for comparability across responses.
+Gamma distribution with log link has the best model fit (lowest AIC).
 
 
 ### Model Results
@@ -352,7 +343,7 @@ Sym_Full.glm.res$Resid.Dev<-c(summary(Sym_Full.glm.gam.l)$deviance, summary(Sym_
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 23% (Eta squared 0.23) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 40% (Eta squared 0.40) of the variance. 
 
 
 #### Check Residuals
@@ -381,7 +372,7 @@ Sym_Full.mod.plot<-plot(ggpredict(Sym_Full.glm.gam.l , terms="Score_Full"), rawd
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=16, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.23 "))),size=sig.sz, hjust = 0);Sym_Full.mod.plot
+        annotate("text", x=18, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Sym_Full.mod.plot
 
 
 ```
@@ -399,14 +390,11 @@ Sym_TP.glm.gaus.i<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=gaussian(link
 Sym_TP.glm.gam.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=Gamma(link="log"))
 Sym_TP.glm.gam.i<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=Gamma(link="inverse"))
 
-Sym_TP.glm.inv<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "1/mu^2"))
-Sym_TP.glm.inv.l<-glm(Sym10.6_cm2~Score_TP, data=FullData, family=inverse.gaussian(link = "log"))
-
 #AIC Model Comparison
-AIC(Sym_TP.glm.gaus, Sym_TP.glm.gaus.l, Sym_TP.glm.gaus.i, Sym_TP.glm.gam.l, Sym_TP.glm.gam.i,  Sym_TP.glm.inv, Sym_TP.glm.inv.l)
+AIC(Sym_TP.glm.gaus, Sym_TP.glm.gaus.l, Sym_TP.glm.gaus.i, Sym_TP.glm.gam.l, Sym_TP.glm.gam.i)
 ```
 
-Gamma distribution with inverse link has the best model fit (lowest AIC). Will compare with log link for comparability across responses.
+Gamma distribution with log link has the best model fit (lowest AIC).
 
 
 ### Model Results
@@ -430,7 +418,7 @@ Sym_TP.glm.res$Resid.Dev<-c(summary(Sym_TP.glm.gam.l)$deviance, summary(Sym_TP.g
 
 ```
 
-Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 40% (Eta squared 0.40) of the variance. 
+Color Score calculated for the Full dataset significantly predicts Chlorophyll (p< 2e-16) and explains 37% (Eta squared 0.37) of the variance. 
 
 
 #### Check Residuals
@@ -460,7 +448,7 @@ Sym_TP.mod.plot<-plot(ggpredict(Sym_TP.glm.gam.l , terms="Score_TP"), rawdata=TR
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-        annotate("text", x=19, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.40 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
+        annotate("text", x=20, y=-.2, label=expression(bolditalic(paste("p < 0.001  ", eta^2, " = 0.37 "))),size=sig.sz, hjust = 0);Sym_TP.mod.plot
 
 ```
 
@@ -527,14 +515,14 @@ Chl_M1.pred.plot<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="lightgreen", pch=15)+ 
   labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Summer")+
   theme_classic()+
-  ylim(0,2)+
-  xlim(0,1)+
+  ylim(0,2.4)+
+  xlim(0,2.4)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  annotate("text",  x=0, y=1.5, label=expression(bolditalic(paste(rho, "= 0.844  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M1.pred.plot
+  annotate("text",  x=1.3, y=0, label=expression(bolditalic(paste(rho, "= 0.942  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M1.pred.plot
 
 ```
 
@@ -562,13 +550,13 @@ Chl_M4.pred.plot<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
   labs(x=expression(paste('Predicted Chlorophyll (\u03BCg cm'^-2*") ")), y="Measured Chlorophyll", title="Winter")+
   theme_classic()+
   ylim(0,2)+
-  xlim(0,1)+
+  xlim(0,2)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  annotate("text",  x=0, y=1.5, label=expression(bolditalic(paste(rho, "= 0.697  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M4.pred.plot
+  annotate("text",  x=1, y=0, label=expression(bolditalic(paste(rho, "= 0.635  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M4.pred.plot
 
 ```
 
@@ -632,14 +620,14 @@ Sym_M1.pred.plot<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=15)+ 
   labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title="Summer")+
   theme_classic()+
-  xlim(0, 1.13)+
-  ylim(0, 1.13)+
+  xlim(0, 1.3)+
+  ylim(0, 1.3)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-   annotate("text",  x=0, y=.9, label=expression(bolditalic(paste(rho, "= 0.789  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M1.pred.plot
+   annotate("text",  x=0.6, y=0, label=expression(bolditalic(paste(rho, "= 0.819  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M1.pred.plot
 
 ```
 
@@ -666,14 +654,14 @@ Sym_M4.pred.plot<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
     geom_point(size=point.sz, colour="darkorange", pch=17)+ 
   labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title="Winter")+
   theme_classic()+
- xlim(0, .8)+
-  ylim(0, .8)+
+ xlim(0, 1)+
+  ylim(0, 1)+
   theme(axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-   annotate("text",  x=0, y=.6, label=expression(bolditalic(paste(rho, "= 0.633  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M4.pred.plot
+   annotate("text",  x=0.5, y=0, label=expression(bolditalic(paste(rho, "= 0.343  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M4.pred.plot
 
 ```
 
@@ -707,41 +695,14 @@ ggsave(filename="Figures/Figure2_Bleaching_Color_Models.png", plot=Bleach_Color_
 
 ### Figure 3 Predicted vs Measured Bleaching
 
-#### Update for Panel
 ```{r}
+##Remove Titles for Panel
+Sym_M1.pred.plot<-Sym_M1.pred.plot+labs(title=NULL)
+Sym_M4.pred.plot<-Sym_M4.pred.plot+labs(title=NULL)
 
-Sym_M1.pred.plot.fig<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
-    geom_point(size=point.sz, colour="darkorange", pch=15)+ 
-  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
-  theme_classic()+
-  xlim(0, 1.13)+
-  ylim(0, 1.13)+
-  theme(axis.title.x = element_text(size = axis.title.sz), 
-        axis.title.y = element_text(size = axis.title.sz), 
-        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-   annotate("text",  x=0, y=.9, label=expression(bolditalic(paste(rho, "= 0.789  p < 0.001"))),size=sig.sz, hjust = 0)
-
-Sym_M4.pred.plot.fig<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
-    geom_point(size=point.sz, colour="darkorange", pch=17)+ 
-  labs(x=expression(paste('Predicted Symbionts (*10'^-6* ' cm'^-2*") ")), y="Measured Symbionts", title=NULL)+
-  theme_classic()+
- xlim(0, .8)+
-  ylim(0, .8)+
-  theme(axis.title.x = element_text(size = axis.title.sz), 
-        axis.title.y = element_text(size = axis.title.sz), 
-        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-        axis.text.y=element_text(size=axis.txt.sz, colour="black"))+
-   annotate("text",  x=0, y=.6, label=expression(bolditalic(paste(rho, "= 0.633  p < 0.001"))),size=sig.sz, hjust = 0)
-
-```
-
-
-#### Figure 3
-```{r}
 ##Create Panel
 Bleach_Predict_fig<-plot_grid(Chl_M1.pred.plot, Chl_M4.pred.plot,
-                     Sym_M1.pred.plot.fig, Sym_M4.pred.plot.fig, 
+                     Sym_M1.pred.plot, Sym_M4.pred.plot, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
                      labels=c("a", "b", "c", "d"),
