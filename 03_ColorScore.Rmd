@@ -26,6 +26,8 @@ if (!require("FactoMineR")) install.packages("FactoMineR")
 if (!require("factoextra")) install.packages("factoextra")
 if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics")
 if (!require("cowplot")) install.packages("cowplot")
+if (!require("png")) install.packages("png")
+if (!require("grid")) install.packages("grid")
 
 ##Load Packages
 library("ggplot2")
@@ -34,6 +36,10 @@ library("FactoMineR")
 library("factoextra")
 library("PerformanceAnalytics")
 library("cowplot")
+library("png")
+library("grid")
+
+
 ```
 Note: Run "Graphing Parameters" section from 01_ExperimentalSetup.R file
 
@@ -64,6 +70,7 @@ rownames(Color)<-Color$ID
 
 ##Merge Color data with Sample Meta Data
 Color<-merge(Color, SampData, all.x=FALSE, all.y=FALSE)
+rownames(Color)<-Color$ID
 
 ```
 
@@ -79,25 +86,11 @@ Color$Blue.Norm.Coral <- Color$Blue.Coral/Color$Blue.Standard
 
 ```
 
-## Full Dataset
+# Color Score Full Dataset
 
-### Distance Matrix
+### Run PCA
 ```{r}
-#Create matrix of standardized colors
-Color.mat <- as.matrix(cbind(Color$Red.Norm.Coral,Color$Green.Norm.Coral,Color$Blue.Norm.Coral))
-
-#Set row names to sample ID
-rownames(Color.mat) <- Color$ID
-
-#Create a Distance Matrix for PCA
-Color.dist <- vegdist(Color.mat, method="euclidean", na.rm=TRUE)
-```
-
-
-### PCA
-```{r}
-#Run Principal Components Analysis
-Color.PCA <- princomp(Color.dist) 
+Color.PCA<-prcomp(Color[,c(19:21)], scale.=TRUE) 
 
 #Initial plot
 fviz_pca_ind(Color.PCA)
@@ -110,34 +103,40 @@ fviz_eig(Color.PCA, addlabels = TRUE)
 
 ```
 
-PC1 Explains 76.6% of the variance in the color data.
+PC1 Explains 94.9% of the variance in the color data.
 
 
-#### Plot PCA
-```{r Color Score PCA Plot Full Set}
+#### Axes and Scores
+```{r}
+##Extract % Variance PC 1
+PCA.PC1<-sprintf("%1.2f",get_eigenvalue(Color.PCA)$variance.percent[1])
+PCA.PC1
 
-#% Variance PCA 1
-PC1<-sprintf("%1.2f",0.7658783 *100)
-PC1
+##Extract % Variance PC 2
+PCA.PC2<-sprintf("%1.2f",get_eigenvalue(Color.PCA)$variance.percent[2])
+PCA.PC2
 
-#% Variance PCA 2
-PC2<-sprintf("%1.2f",0.2095118 *100)
-PC2
+##Extract Individual Sample Scores
+Color.PCA.scores <- as.data.frame(Color.PCA$x)
+Color.PCA.scores$ID<-rownames(Color.PCA.scores)
 
 #Prepare for Plotting
-Color.PCA_scores <- as.data.frame(Color.PCA$scores[,c(1:2)])
-Color.PCA_scores$ID<-rownames(Color.PCA_scores)
-Color.PCA_scores<-merge(Color.PCA_scores, SampData)
+Color.PCA.scores<-merge(Color.PCA.scores, SampData)
 
+```
+
+
+#### Plot PCA 
+```{r}
 #Plot PCA
-Color.PCA.plot<-ggplot(data = Color.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
-  geom_point(data = Color.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
+Color.PCA.plot<-ggplot(data = Color.PCA.scores, aes(x = PC1, y = PC2)) + 
+  geom_point(aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
   scale_colour_manual(values =HC.colors.o)+
   theme_classic()+
-  scale_x_continuous(limits = c(-4, 12))+
-  scale_y_continuous(limits = c(-8, 8))+
-  labs(x=paste0('PC 1 (',PC1,"%)"), y=paste0('PC 2 (',PC2,"%)"))+
-  ggtitle("Full Dataset")+
+  scale_x_continuous(limits = c(-3, 5.5))+
+  scale_y_continuous(limits = c(-4.25, 4.25))+
+  labs(x=paste0('PC 1 (',PCA.PC1,"%)"), y=paste0('PC 2 (',PCA.PC2,"%)"))+
+  ggtitle("Color Score PCA")+
    theme(plot.title=element_text(size=plot.title.sz, hjust=0.5),
      axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
@@ -150,18 +149,53 @@ Color.PCA.plot<-ggplot(data = Color.PCA_scores, aes(x = Comp.1, y = Comp.2)) +
 
 ```
 
+### LDA on PCA Scores
+```{r}
+##LDA on PCA Scores
+Color.LDA_PCA<-lda(Treatment~PC1+PC2+PC3, data=Color.PCA.scores)
 
-Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score (explains 76.6% of the variance in the color data). Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
+##Predict
+Color.pLDA_PCA<-predict(object=Color.LDA_PCA, newdata=Color.PCA.scores)
+
+##Save LD1 Scores
+Color.LDA_PCA.scores<-data.frame(ID=Color.PCA.scores$ID, LD1=Color.pLDA_PCA$x)
+
+#Prepare for Plotting
+Color.LDA_PCA.scores<-merge(Color.LDA_PCA.scores, SampData)
+
+```
+
+
+#### LD 1 Density Plot
+
+```{r}
+Color.LDA.PCA_LD1.plot<-ggplot(data = Color.LDA_PCA.scores, aes(x = LD1)) + 
+  geom_density(aes(fill = Treatment), alpha = 0.6) + 
+  scale_fill_manual(values =HC.colors.o)+
+  theme_classic()+
+  scale_x_continuous(limits = c(-3, 5.5))+
+  labs(x="LD1", y= "Density")+
+  ggtitle("Full Dataset")+
+   theme(plot.title=element_text(size=plot.title.sz, hjust=0.5),
+     axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
+        legend.text=element_text(size=leg.txt.sz),
+        legend.title=element_text(size=leg.title.sz),
+        legend.box.background = element_rect(color = "black"), 
+        legend.position="bottom");Color.LDA.PCA_LD1.plot
+```
 
 
 ### Extract Color Score
 ```{r}
 ##Retain Metadata columns of interest
-names(Color.PCA_scores)
-ColorData<-Color.PCA_scores[,c(1,4:9,14,13)]
+names(Color.LDA_PCA.scores)
+ColorData<-Color.LDA_PCA.scores[,c("ID", "TimeP", "Site", "Genotype", "Treat", "Treatment", "Seas", "Set")] 
 
 ##Retain PC1 as Color Score
-ColorData$Score_Full<-Color.PCA_scores$Comp.1
+ColorData$Score_Full<-Color.LDA_PCA.scores$LD1
 
 ##Initial Visual Check
 ggplot(ColorData, aes(x=Set, y=Score_Full)) + 
@@ -190,31 +224,18 @@ ggplot(ColorData, aes(x=Treatment, y=Score_Full)) +
 ```
 
 
-## By Timepoint
+# Color Score By Timepoint
 Repeat the calculation of Color Score for each Timepoint individually
 
-## Summer 1 Aug 2021 W2
+### Summer 1 Aug 2021 W2
 
-#### Distance Matrix
+#### Run PCA
 ```{r}
 #Subset W2 Timepoint
 Color_W2<-subset(Color, TimeP=="W2")
 
-#Create matrix of standardized colors
-Color_W2.mat <- as.matrix(cbind(Color_W2$Red.Norm.Coral,Color_W2$Green.Norm.Coral,Color_W2$Blue.Norm.Coral))
-
-#Set row names to sample ID
-rownames(Color_W2.mat) <- Color_W2$ID
-
-#Create a Distance Matrix for PCA
-Color_W2.dist <- vegdist(Color_W2.mat, method="euclidean", na.rm=TRUE)
-```
-
-
-#### PCA
-```{r}
-#Run Principal Components Analysis
-Color_W2.PCA <- princomp(Color_W2.dist) 
+#PCA
+Color_W2.PCA<-prcomp(Color_W2[,c(19:21)], scale.=TRUE) 
 
 #Initial plot
 fviz_pca_ind(Color_W2.PCA)
@@ -227,72 +248,66 @@ fviz_eig(Color_W2.PCA, addlabels = TRUE)
 
 ```
 
-PC1 Explains 79% of the variance in the color data.
+PC1 Explains 97.9% of the variance in the color data.
 
 
-#### Plot PCA
-```{r Color Score PCA Plot Summer 1}
+### LDA on PCA Scores
+```{r}
+##Extract Individual Sample Scores
+Color_W2.PCA.scores <- as.data.frame(Color_W2.PCA$x)
+Color_W2.PCA.scores$ID<-rownames(Color_W2.PCA.scores)
 
-#% Variance PCA 1
-PC1_W2<-sprintf("%1.2f",0.7899334*100)
-PC1_W2
+##Add Treatment Variables
+Color_W2.PCA.scores<-merge(Color_W2.PCA.scores, SampData, all.y=FALSE)
 
-#% Variance PCA 2
-PC2_W2<-sprintf("%1.2f",0.1854891*100)
-PC2_W2
+##LDA on PCA Scores
+Color_W2.LDA_PCA<-lda(Treatment~PC1+PC2+PC3, data=Color_W2.PCA.scores)
+
+##Predict
+Color_W2.pLDA_PCA<-predict(object=Color_W2.LDA_PCA, newdata=Color_W2.PCA.scores)
+
+##Save LD1 Scores
+Color_W2.LDA_PCA.scores<-data.frame(ID=Color_W2.PCA.scores$ID, LD1=Color_W2.pLDA_PCA$x)
 
 #Prepare for Plotting
-Color_W2.PCA_scores <- as.data.frame(Color_W2.PCA$scores[,c(1:2)])
-Color_W2.PCA_scores$ID<-rownames(Color_W2.PCA_scores)
-Color_W2.PCA_scores<-merge(Color_W2.PCA_scores, SampData)
+Color_W2.LDA_PCA.scores<-merge(Color_W2.LDA_PCA.scores, SampData)
 
-#Plot PCA
-Color_W2.PCA.plot<-ggplot(data = Color_W2.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
-  geom_point(data = Color_W2.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
-  scale_colour_manual(values =HC.colors.o)+
+```
+
+
+#### LD 1 Density Plot
+
+```{r}
+Color_W2.LDA.PCA_LD1.plot<-ggplot(data = Color_W2.LDA_PCA.scores, aes(x = LD1)) + 
+  geom_density(aes(fill = Treatment), alpha = 0.6) + 
+  scale_fill_manual(values =HC.colors.o)+
   theme_classic()+
-  scale_x_continuous(limits = c(-4, 12))+
-  scale_y_continuous(limits = c(-8, 8))+
-  labs(x=paste0('PC 1 (',PC1_W2,"%)"), y=paste0('PC 2 (',PC2_W2,"%)"))+
-    ggtitle("Summer 1")+
+  scale_x_continuous(limits = c(-3, 5.5))+
+  labs(x="LD1", y= "Density")+
+  ggtitle("Summer 1")+
    theme(plot.title=element_text(size=plot.title.sz, hjust=0.5),
-         axis.title.x = element_text(size = axis.title.sz), 
+     axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         legend.text=element_text(size=leg.txt.sz),
         legend.title=element_text(size=leg.title.sz),
         legend.box.background = element_rect(color = "black"), 
-        legend.position="bottom");Color_W2.PCA.plot
-
+        legend.position="bottom");Color_W2.LDA.PCA_LD1.plot
 ```
 
+Samples align along LD1 according to Treatment (Heated vs Control). Coordinates along LD1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
 
-Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
 
+### Summer 2 Aug 2021 M1
 
-## Summer 2 Aug 2021 M1
-
-#### Distance Matrix
+#### Run PCA
 ```{r}
-#Subset M1 Timepoint
+#Subset W2 Timepoint
 Color_M1<-subset(Color, TimeP=="M1")
 
-#Create matrix of standardized colors
-Color_M1.mat <- as.matrix(cbind(Color_M1$Red.Norm.Coral,Color_M1$Green.Norm.Coral,Color_M1$Blue.Norm.Coral))
-
-#Set row names to sample ID
-rownames(Color_M1.mat) <- Color_M1$ID
-
-#Create a Distance Matrix for PCA
-Color_M1.dist <- vegdist(Color_M1.mat, method="euclidean", na.rm=TRUE)
-```
-
-
-#### PCA
-```{r}
-#Run Principal Components Analysis
-Color_M1.PCA <- princomp(Color_M1.dist) 
+#PCA
+Color_M1.PCA<-prcomp(Color_M1[,c(19:21)], scale.=TRUE) 
 
 #Initial plot
 fviz_pca_ind(Color_M1.PCA)
@@ -305,72 +320,66 @@ fviz_eig(Color_M1.PCA, addlabels = TRUE)
 
 ```
 
-PC1 Explains 84.8% of the variance in the color data.
+PC1 Explains 96.2% of the variance in the color data.
 
 
-#### Plot PCA
-```{r Color Score PCA Plot Summer 2}
+### LDA on PCA Scores
+```{r}
+##Extract Individual Sample Scores
+Color_M1.PCA.scores <- as.data.frame(Color_M1.PCA$x)
+Color_M1.PCA.scores$ID<-rownames(Color_M1.PCA.scores)
 
-#% Variance PCA 1
-PC1_M1<-sprintf("%1.2f",0.8482496 *100)
-PC1_M1
+##Add Treatment Variables
+Color_M1.PCA.scores<-merge(Color_M1.PCA.scores, SampData, all.y=FALSE)
 
-#% Variance PCA 2
-PC2_M1<-sprintf("%1.2f",0.1311346 *100)
-PC2_M1
+##LDA on PCA Scores
+Color_M1.LDA_PCA<-lda(Treatment~PC1+PC2+PC3, data=Color_M1.PCA.scores)
+
+##Predict
+Color_M1.pLDA_PCA<-predict(object=Color_M1.LDA_PCA, newdata=Color_M1.PCA.scores)
+
+##Save LD1 Scores
+Color_M1.LDA_PCA.scores<-data.frame(ID=Color_M1.PCA.scores$ID, LD1=Color_M1.pLDA_PCA$x)
 
 #Prepare for Plotting
-Color_M1.PCA_scores <- as.data.frame(Color_M1.PCA$scores[,c(1:2)])
-Color_M1.PCA_scores$ID<-rownames(Color_M1.PCA_scores)
-Color_M1.PCA_scores<-merge(Color_M1.PCA_scores, SampData)
+Color_M1.LDA_PCA.scores<-merge(Color_M1.LDA_PCA.scores, SampData)
 
-#Plot PCA
-Color_M1.PCA.plot<-ggplot(data = Color_M1.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
-  geom_point(data = Color_M1.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
-  scale_colour_manual(values =HC.colors.o)+
+```
+
+
+#### LD 1 Density Plot
+
+```{r}
+Color_M1.LDA.PCA_LD1.plot<-ggplot(data = Color_M1.LDA_PCA.scores, aes(x = LD1)) + 
+  geom_density(aes(fill = Treatment), alpha = 0.6) + 
+  scale_fill_manual(values =HC.colors.o)+
   theme_classic()+
-  scale_x_continuous(limits = c(-4, 12))+
-  scale_y_continuous(limits = c(-8, 8))+
-  labs(x=paste0('PC 1 (',PC1_M1,"%)"), y=paste0('PC 2 (',PC2_M1,"%)"))+
-    ggtitle("Summer 2")+
+  scale_x_continuous(limits = c(-3.5, 5))+
+  labs(x="LD1", y= "Density")+
+  ggtitle("Summer 2")+
    theme(plot.title=element_text(size=plot.title.sz, hjust=0.5),
-         axis.title.x = element_text(size = axis.title.sz), 
+     axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         legend.text=element_text(size=leg.txt.sz),
         legend.title=element_text(size=leg.title.sz),
         legend.box.background = element_rect(color = "black"), 
-        legend.position="bottom");Color_M1.PCA.plot
-
+        legend.position="bottom");Color_M1.LDA.PCA_LD1.plot
 ```
 
+Samples align along LD1 according to Treatment (Heated vs Control). Coordinates along LD1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
 
-Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
 
+### Winter Dec 20201 M4
 
-## Winter Dec 20201 M4
-
-#### Distance Matrix
+#### Run PCA
 ```{r}
-#Subset M4 Timepoint
+#Subset W2 Timepoint
 Color_M4<-subset(Color, TimeP=="M4")
 
-#Create matrix of standardized colors
-Color_M4.mat <- as.matrix(cbind(Color_M4$Red.Norm.Coral,Color_M4$Green.Norm.Coral,Color_M4$Blue.Norm.Coral))
-
-#Set row names to sample ID
-rownames(Color_M4.mat) <- Color_M4$ID
-
-#Create a Distance Matrix for PCA
-Color_M4.dist <- vegdist(Color_M4.mat, method="euclidean", na.rm=TRUE)
-```
-
-
-#### PCA
-```{r}
-#Run Principal Components Analysis
-Color_M4.PCA <- princomp(Color_M4.dist) 
+#PCA
+Color_M4.PCA<-prcomp(Color_M4[,c(19:21)], scale.=TRUE) 
 
 #Initial plot
 fviz_pca_ind(Color_M4.PCA)
@@ -383,61 +392,68 @@ fviz_eig(Color_M4.PCA, addlabels = TRUE)
 
 ```
 
-PC1 Explains 73.4% of the variance in the color data.
+PC1 Explains 94.3% of the variance in the color data.
 
 
-#### Plot PCA
-```{r Color Score PCA Plot Winter}
+### LDA on PCA Scores
+```{r}
+##Extract Individual Sample Scores
+Color_M4.PCA.scores <- as.data.frame(Color_M4.PCA$x)
+Color_M4.PCA.scores$ID<-rownames(Color_M4.PCA.scores)
 
-#% Variance PCA 1
-PC1_M4<-sprintf("%1.2f",0.7338452 *100)
-PC1_M4
+##Add Treatment Variables
+Color_M4.PCA.scores<-merge(Color_M4.PCA.scores, SampData, all.y=FALSE)
 
-#% Variance PCA 2
-PC2_M4<-sprintf("%1.2f",0.2385715*100)
-PC2_M4
+##LDA on PCA Scores
+Color_M4.LDA_PCA<-lda(Treatment~PC1+PC2+PC3, data=Color_M4.PCA.scores)
+
+##Predict
+Color_M4.pLDA_PCA<-predict(object=Color_M4.LDA_PCA, newdata=Color_M4.PCA.scores)
+
+##Save LD1 Scores
+Color_M4.LDA_PCA.scores<-data.frame(ID=Color_M4.PCA.scores$ID, LD1=Color_M4.pLDA_PCA$x)
 
 #Prepare for Plotting
-Color_M4.PCA_scores <- as.data.frame(Color_M4.PCA$scores[,c(1:2)])
-Color_M4.PCA_scores$ID<-rownames(Color_M4.PCA_scores)
-Color_M4.PCA_scores<-merge(Color_M4.PCA_scores, SampData)
+Color_M4.LDA_PCA.scores<-merge(Color_M4.LDA_PCA.scores, SampData)
 
-#Plot PCA
-Color_M4.PCA.plot<-ggplot(data = Color_M4.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
-  geom_point(data = Color_M4.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
-  scale_colour_manual(values =HC.colors.o)+
+```
+
+
+#### LD 1 Density Plot
+
+```{r}
+Color_M4.LDA.PCA_LD1.plot<-ggplot(data = Color_M4.LDA_PCA.scores, aes(x = LD1)) + 
+  geom_density(aes(fill = Treatment), alpha = 0.6) + 
+  scale_fill_manual(values =HC.colors.o)+
   theme_classic()+
-  scale_x_continuous(limits = c(-4, 12))+
-  scale_y_continuous(limits = c(-8, 8))+
-  labs(x=paste0('PC 1 (',PC1_M4,"%)"), y=paste0('PC 2 (',PC2_M4,"%)"))+
-    ggtitle("Winter")+
+  scale_x_continuous(limits = c(-3.5, 5))+
+  labs(x="LD1", y= "Density")+
+  ggtitle("Winter")+
    theme(plot.title=element_text(size=plot.title.sz, hjust=0.5),
-         axis.title.x = element_text(size = axis.title.sz), 
+     axis.title.x = element_text(size = axis.title.sz), 
         axis.title.y = element_text(size = axis.title.sz), 
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         legend.text=element_text(size=leg.txt.sz),
         legend.title=element_text(size=leg.title.sz),
         legend.box.background = element_rect(color = "black"), 
-        legend.position="bottom");Color_M4.PCA.plot
-
+        legend.position="bottom");Color_M4.LDA.PCA_LD1.plot
 ```
 
-
-Samples align along PC1 according to Treatment (Heated vs Control). Coordinates along PC1 will be extracted as the Color Score. However, the treatments align in the opposite order as in Aug timepoints. *Note: These coordinates will not be multiplied by -1 for intuitive interpretation (Control > Heated), but will still be made positive by adding 20
-
+Samples align along LD1 according to Treatment (Heated vs Control). Coordinates along LD1 will be extracted as the Color Score. Coordinates will multiplied by -1 for intuitive interpretation (Control > Heated) then made positive by adding 20
 
 
-## Extract Color Scores
+
+### Extract Color Scores
 ```{r}
 ##Combine results from individual timepoints
-ColorData.TP<-rbind(Color_W2.PCA_scores, Color_M1.PCA_scores, Color_M4.PCA_scores)
+ColorData.TP<-rbind(Color_W2.LDA_PCA.scores, Color_M1.LDA_PCA.scores, Color_M4.LDA_PCA.scores)
 
 ##Retain PC1 as Color Score
-ColorData.TP$Score_TP<-ColorData.TP$Comp.1
+ColorData.TP$Score_TP<-ColorData.TP$LD1
 
-##Invert signs for Control > Heated for all except M4
-ColorData.TP$Score_TP[-c(which(ColorData.TP$TimeP=="M4"))]<-ColorData.TP$Score_TP[-c(which(ColorData.TP$TimeP=="M4"))]*(-1)
+##Invert signs for Control > Heated
+ColorData.TP$Score_TP<-ColorData.TP$Score_TP*(-1)
 
 #Adding 20 to make all score values positive 
 ColorData.TP$Score_TP<- ColorData.TP$Score_TP +20
@@ -460,17 +476,11 @@ ColorData<-merge(ColorData, ColorData.TP[,c("ID", "Score_TP")])
 ```
 
 
-### Correlation
+#### Correlation
 ```{r}
-names(ColorData)
-cor(ColorData[,c("Score_Full", "Score_TP")], method="spearman")
+cor.test(ColorData$Score_Full, ColorData$Score_TP, method="spearman")
+plot(ColorData$Score_Full, ColorData$Score_TP)
 ```
-
-
-```{r}
-chart.Correlation(ColorData[,c("Score_Full", "Score_TP")], histogram=TRUE, method="spearman")
-```
-
 
 Calculations of Color score between the Full Dataset or Individual PCA's by Timepoints are significantly correlated with each other. 
 
@@ -486,28 +496,37 @@ write.csv(ColorData, "Outputs/ScoreData.csv", row.names=FALSE)
 # Figures
 
 ### Figure 1 Panels d and e
-```{r}
-##Color Score PCA Plot
-Color.PCA.plot_fig1<-ggplot(data = Color.PCA_scores, aes(x = Comp.1, y = Comp.2)) + 
-  geom_point(data = Color.PCA_scores, aes(colour = Treatment), size = point.sz-1, alpha = 0.8) + 
-  scale_colour_manual(values =HC.colors.o)+
-  theme_classic()+
-  scale_x_continuous(limits = c(-4, 12))+
-  scale_y_continuous(limits = c(-8, 8))+
-  labs(x=paste0('PC 1 (',PC1,"%)"), y=paste0('PC 2 (',PC2,"%)"))+
-   theme(axis.title.x = element_text(size = axis.title.sz), 
-        axis.title.y = element_text(size = axis.title.sz), 
-        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
-        axis.text.y=element_text(size=axis.txt.sz, colour="black"),
-        legend.text=element_text(size=leg.txt.sz),
-        legend.title=element_text(size=leg.title.sz),
-        legend.box.background = element_rect(color = "black"), 
-        legend.position="top")+
-   annotate("segment", x = -4, xend = 12, y = -8, yend = -8, linewidth=bar.sz,
-           arrow = arrow(ends = "both", angle = 90, length = unit(.2,"cm")))+
-  annotate("text", x=4, y=-7, label="PC 1 Scores = Color Score", size=levels.sz);Color.PCA.plot_fig1
 
-##Color Score by Treatment Boxplot
+#### PCA Inset
+```{r}
+##Update legend
+Color.PCA.plot<-Color.PCA.plot+theme(legend.position=c(.5, .9), legend.direction="horizontal")
+
+##Save PCA for Inset
+ggsave(filename="Figures/Figure1d_inset_Color_Score_PCA.png", plot=Color.PCA.plot, dpi=300, width=5, height=5, units="in")
+```
+
+
+#### LDA with Inset
+```{r}
+##Update legend and title
+Color.LDA.PCA_LD1.plot_fig1<-Color.LDA.PCA_LD1.plot+theme(legend.position="none")+ggtitle("Color Score LDA-PCA")
+
+##Read in Priming Treatment Plot
+PCA_Inset<-readPNG("Figures/Figure1d_inset_Color_Score_PCA.png")
+
+####Plot Experimental Phases and Add Inset
+Color.LDA.PCA_LD1.plot_fig1<-Color.LDA.PCA_LD1.plot_fig1 +
+  ylim(-0.1, 0.6)+
+  annotation_custom(rasterGrob(PCA_Inset), xmin=1.6, xmax=5.75, ymin=.22, ymax=.62)+
+   annotate("segment", x = -3, xend = 5.5, y = -0.03, yend = -0.03, linewidth=bar.sz,
+           arrow = arrow(ends = "both", angle = 90, length = unit(.2,"cm")))+
+  annotate("text", x=1, y=-0.08, label="LD 1 Scores", size=levels.sz); Color.LDA.PCA_LD1.plot_fig1
+
+```
+
+#### Boxplot of Color Scores
+```{r}
 Score.boxplot_fig1<-ggplot(ColorData, aes(x=Treatment, y=Score_Full)) + 
   geom_jitter(alpha=0.8, shape=16, position=position_jitter(0.1), size=point.sz, aes(colour=Treatment))+
   geom_boxplot(alpha=0.5, shape=2, outlier.shape = NA, linewidth=bar.sz, aes(fill=Treatment))+
@@ -520,13 +539,16 @@ Score.boxplot_fig1<-ggplot(ColorData, aes(x=Treatment, y=Score_Full)) +
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
         legend.position="none")+
-  geom_rect(aes(xmin=.5, xmax=1.5, ymin=13, ymax=9.5), alpha=.01, fill="grey", colour="black", linewidth=bar.sz-.5)+
-  annotate("text", x=1, y=12, label= "Color Score = ", size=sig.sz, fontface="italic")+
-  annotate("text", x=1, y=10.5, label= "-1(PC1 Score) + 20", size=sig.sz, fontface="italic");Score.boxplot_fig1
+  geom_rect(aes(xmin=.5, xmax=1.5, ymin=16, ymax=17.5), alpha=.01, fill="grey", colour="black", linewidth=bar.sz-.5)+
+  annotate("text", x=1, y=17, label= "Color Score = ", size=sig.sz, fontface="italic")+
+  annotate("text", x=1, y=16.5, label= "-1(LD1 Score) + 20", size=sig.sz, fontface="italic");Score.boxplot_fig1
+```
 
+#### Figure 1DE
 
+```{r}
 ##Create Panel
-Color_Score_Method_fig<-plot_grid(Color.PCA.plot_fig1, Score.boxplot_fig1,
+Color_Score_Method_fig<-plot_grid(Color.LDA.PCA_LD1.plot_fig1, Score.boxplot_fig1,
                      nrow=1, ncol=2, 
                      rel_widths=1, rel_heights=1, 
                      labels=c("d", "e"),
@@ -540,12 +562,19 @@ ggsave(filename="Figures/Figure1de_Color_Score_Method.png", plot=Color_Score_Met
 
 
 
-### Figure S1 Color Score PCAs
+### Figure S1 Color Score LDAs
 
 ```{r}
+##Update legends
+Color.LDA.PCA_LD1.plot<-Color.LDA.PCA_LD1.plot+theme(legend.position=c(.8, .8))
+Color_W2.LDA.PCA_LD1.plot<-Color_W2.LDA.PCA_LD1.plot+theme(legend.position="none")
+Color_M1.LDA.PCA_LD1.plot<-Color_M1.LDA.PCA_LD1.plot+theme(legend.position="none")
+Color_M4.LDA.PCA_LD1.plot<-Color_M4.LDA.PCA_LD1.plot+theme(legend.position="none")
+
+
 ##Create Panel
-Color_Score_PCA_fig<-plot_grid(Color.PCA.plot, Color_W2.PCA.plot,
-                     Color_M1.PCA.plot, Color_M4.PCA.plot, 
+Color_Score_LDA_fig<-plot_grid(Color.LDA.PCA_LD1.plot, Color_W2.LDA.PCA_LD1.plot,
+                     Color_M1.LDA.PCA_LD1.plot, Color_M4.LDA.PCA_LD1.plot, 
                      nrow=2, ncol=2, 
                      rel_widths=1, rel_heights=1, 
                      labels=c("a", "b", "c", "d"),
@@ -553,7 +582,7 @@ Color_Score_PCA_fig<-plot_grid(Color.PCA.plot, Color_W2.PCA.plot,
                      label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/FigureS1_Color_Score_PCA.png", plot=Color_Score_PCA_fig, dpi=300, width=8, height=9, units="in")
+ggsave(filename="Figures/FigureS1_Color_Score_LDA.png", plot=Color_Score_LDA_fig, dpi=300, width=10, height=8, units="in")
  
 ```
 
