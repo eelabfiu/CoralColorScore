@@ -24,11 +24,13 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 if (!require("viridis")) install.packages("viridis")
 if (!require("scales")) install.packages("scales")
 if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("Rmisc")) install.packages("Rmisc")
 
 ##Load Packages
 library(viridis)
 library(scales)
 library(ggplot2)
+library(Rmisc)
 ```
 
 
@@ -62,3 +64,108 @@ cap.sz=0.3
 plot.title.sz=20
 
 ```
+
+
+### Load and Organize Data
+```{r}
+##Load Data
+AssayTemp<-read.csv("Data/TempData.csv", header=TRUE)
+
+##Set factor variables
+AssayTemp$TimeP<-factor(AssayTemp$TimeP, ordered=TRUE, levels=c("W2", "M1", "M4"))
+AssayTemp$TempTreatment<-factor(AssayTemp$TempTreatment, ordered=TRUE, levels=c("Control", "Heated"))
+
+##Set phase variable
+AssayTemp$Phase<-"RampUp"
+AssayTemp$Phase[which(AssayTemp$Minute>((3*60)+1) & AssayTemp$Minute < (6*60))]<-"MaxHold"
+AssayTemp$Phase[which(AssayTemp$Minute>((6*60)+1) & AssayTemp$Minute < (7*60))]<-"RampDown"
+AssayTemp$Phase[which(AssayTemp$Minute>((7*60)+1))]<-"MinHold"
+
+
+```
+
+
+# Heat Assay Temperature
+
+### Average Max Temperatures
+```{r}
+##Subset Max Hold Phase
+AssayTemp.Hold<-subset(AssayTemp, Phase=="MaxHold")
+
+##Summarize by Treatment and Timepoint
+summarySE(data=AssayTemp.Hold, measurevar="Temp_C", groupvars=c("TimeP", "TempTreatment"))
+```
+
+
+### Average Ambient Temperatures
+```{r}
+##Subset Control Treatment
+AssayTemp.Ambient<-subset(AssayTemp, TempTreatment=="Control")
+
+##Summarize by Treatment and Timepoint
+summarySE(data=AssayTemp.Ambient, measurevar="Temp_C", groupvars=c("TimeP"))
+```
+
+
+### Average Temperature by Treatment by Timepoint
+```{r}
+names(AssayTemp)
+
+##Average across Tanks per Treatment
+Temp.a<-aggregate(AssayTemp$Temp_C, list(AssayTemp$TimeP, AssayTemp$TempTreatment, AssayTemp$Minute), mean)
+names(Temp.a)<-c("TimeP", "TempTreatment", "Minute", "Temp_C")
+
+##Minimum
+Temp.min<-aggregate(AssayTemp$Temp_C, list(AssayTemp$TimeP, AssayTemp$TempTreatment, AssayTemp$Minute), min)
+names(Temp.min)<-c("TimeP", "TempTreatment", "Minute", "Temp_C.min")
+
+##Maximum
+Temp.max<-aggregate(AssayTemp$Temp_C, list(AssayTemp$TimeP, AssayTemp$TempTreatment, AssayTemp$Minute), max)
+names(Temp.max)<-c("TimeP", "TempTreatment", "Minute", "Temp_C.max")
+
+##Combine Summary Stats
+Temp.a<-merge(Temp.a, Temp.min)
+Temp.a<-merge(Temp.a, Temp.max)
+
+##Set Treatment as Ordered Factor
+Temp.a$TempTreatment<-factor(Temp.a$TempTreatment, ordered=TRUE, levels=c("Control", "Heated"))
+
+##Add a Season Variable
+Temp.a$Seas<-ifelse(Temp.a$TimeP=="W2", "Summer 1", ifelse(Temp.a$TimeP=="M1", "Summer 2", ifelse(Temp.a$TimeP=="M4", "Winter" , NA)))
+Temp.a$Seas<-factor(Temp.a$Seas, levels=c("Summer 1", "Summer 2", "Winter"), ordered=TRUE)
+
+
+```
+
+
+### Plot by Timepoint
+```{r}
+##Plot Figure
+HATemp.plot<-ggplot() +
+  geom_ribbon(data=Temp.a, aes(x=Minute, ymin=Temp_C.min, ymax=Temp_C.max, fill=TempTreatment), alpha=0.5) +
+  geom_line(data=Temp.a, aes(color=TempTreatment, x=Minute, y=Temp_C), linewidth=bar.sz) +
+  scale_color_manual(values = c(HC.colors.o))+
+  scale_fill_manual(values = c(HC.colors.o))+
+   theme_bw()+
+  theme(axis.title.x = element_text(size = axis.title.sz), 
+        axis.title.y = element_text(size = axis.title.sz), 
+        axis.text.x=element_text(size=axis.txt.sz, colour="black"),
+        axis.text.y=element_text(size=axis.txt.sz, colour="black"), 
+        legend.position="none", 
+        strip.text=element_text(size=axis.txt.sz, colour="black"), 
+        strip.background=element_rect(fill="white"))+
+  labs(x="Time (min)", y="Temperature (\u00B0C)")+
+  ylim(25.5, 38)+
+  facet_wrap(~Seas, ncol=3);HATemp.plot
+
+```
+
+
+# Figures
+
+### Figure S1 Heat Assay Temperatures
+```{r}
+##Save figure
+ggsave(filename="Figures/FigS1_Heat_Assay_Temperatures.png", plot=HATemp.plot, dpi=300, width=12, height=4, units="in")
+```
+
