@@ -2166,7 +2166,7 @@ prop.test(Tol_contrasts.agree.ColF.ColTP$Agree, Tol_contrasts.agree.ColF.ColTP$T
 
 # Figures
 
-### Figure S2 Tolerance Across Metrics
+### Figure S3 Tolerance Across Metrics
 
 #### Update for Panel
 ```{r}
@@ -2206,7 +2206,7 @@ Tol_ScoreTP_M4_SG.plot<-Tol_ScoreTP_M4_SG.plot+labs(x="", y="")+ theme(legend.po
 ```
 
 
-#### Figure S2
+#### Figure S3
 ```{r}
 ##Create Panel
 Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot, Tol_Chl_M1_SG.plot, Tol_Chl_M4_SG.plot,
@@ -2224,7 +2224,7 @@ Tolerance_fig<-plot_grid(Tol_Chl_W2_SG.plot, Tol_Chl_M1_SG.plot, Tol_Chl_M4_SG.p
                         label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/FigureS2_Tolerance_Across_Metrics.png", plot=Tolerance_fig, dpi=300, width=14, height=20, units="in")
+ggsave(filename="Figures/FigureS3_Tolerance_Across_Metrics.png", plot=Tolerance_fig, dpi=300, width=14, height=20, units="in")
 
 ```
 
