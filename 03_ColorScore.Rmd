@@ -28,6 +28,7 @@ if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics")
 if (!require("cowplot")) install.packages("cowplot")
 if (!require("png")) install.packages("png")
 if (!require("grid")) install.packages("grid")
+if (!require("MASS")) install.packages("MASS")
 
 ##Load Packages
 library("ggplot2")
@@ -38,6 +39,7 @@ library("PerformanceAnalytics")
 library("cowplot")
 library("png")
 library("grid")
+library("MASS")
 
 
 ```
@@ -510,7 +512,7 @@ ggsave(filename="Figures/Figure1d_inset_Color_Score_PCA.png", plot=Color.PCA.plo
 #### LDA with Inset
 ```{r}
 ##Update legend and title
-Color.LDA.PCA_LD1.plot_fig1<-Color.LDA.PCA_LD1.plot+theme(legend.position="none")+ggtitle("Color Score LDA-PCA")
+Color.LDA.PCA_LD1.plot_fig1<-Color.LDA.PCA_LD1.plot+theme(legend.position="none")+ggtitle("Color Score PCA-LDA")
 
 ##Read in Priming Treatment Plot
 PCA_Inset<-readPNG("Figures/Figure1d_inset_Color_Score_PCA.png")
@@ -562,7 +564,7 @@ ggsave(filename="Figures/Figure1de_Color_Score_Method.png", plot=Color_Score_Met
 
 
 
-### Figure S1 Color Score LDAs
+### Figure S2 Color Score LDAs
 
 ```{r}
 ##Update legends
@@ -582,7 +584,7 @@ Color_Score_LDA_fig<-plot_grid(Color.LDA.PCA_LD1.plot, Color_W2.LDA.PCA_LD1.plot
                      label_fontface = "bold")
 
 ##Save Figure
-ggsave(filename="Figures/FigureS1_Color_Score_LDA.png", plot=Color_Score_LDA_fig, dpi=300, width=10, height=8, units="in")
+ggsave(filename="Figures/FigureS2_Color_Score_LDA.png", plot=Color_Score_LDA_fig, dpi=300, width=10, height=8, units="in")
  
 ```
 
