@@ -134,11 +134,11 @@ None of the variables are normally distributed.
 
 
 ### Checking Correlation
-Checking correlation between each Color Score calculation with traditional bleaching metrics. Using Spearman correlation due to non-normality. 
+Checking correlation between each Color Score calculation with traditional bleaching metrics. Using Pearson correlation to check for linear correlation. 
 
 ```{r}
 names(FullData)
-rcorr(as.matrix(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2")], type="spearman"))
+rcorr(as.matrix(FullData[,c("Score_Full", "Score_TP", "Chl_ug.cm2", "Sym10.6_cm2")], type="pearson"))
 ```
 
 Both metrics of Color Score (calculated from different subset strategies) are highly correlated with both Chlorophyll concentration and Symbiont density. 
@@ -502,7 +502,7 @@ M1_Chl_predict<-data.frame(Predicted=predict(Chl_W2.glm, newdata=data.frame(Scor
 M1_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M1")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M1_Chl_predict$Predicted, M1_Chl_predict$Measured, method="spearman")
+cor.test(M1_Chl_predict$Predicted, M1_Chl_predict$Measured, method="pearson")
 
 ```
 
@@ -522,7 +522,7 @@ Chl_M1.pred.plot<-ggplot(M1_Chl_predict, aes(x=Predicted, y=Measured))+
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  annotate("text",  x=1.3, y=0, label=expression(bolditalic(paste(rho, "= 0.942  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M1.pred.plot
+  annotate("text",  x=1.3, y=0, label=expression(bolditalic(paste(rho, "= 0.886  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M1.pred.plot
 
 ```
 
@@ -536,7 +536,7 @@ M4_Chl_predict<-data.frame(Predicted=predict(Chl_W2.glm, newdata=data.frame(Scor
 M4_Chl_predict$Measured<-FullData$Chl_ug.cm2[which(FullData$TimeP=="M4")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M4_Chl_predict$Predicted, M4_Chl_predict$Measured, method="spearman")
+cor.test(M4_Chl_predict$Predicted, M4_Chl_predict$Measured, method="pearson")
 
 ```
 
@@ -556,7 +556,7 @@ Chl_M4.pred.plot<-ggplot(M4_Chl_predict, aes(x=Predicted, y=Measured))+
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-  annotate("text",  x=1, y=0, label=expression(bolditalic(paste(rho, "= 0.635  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M4.pred.plot
+  annotate("text",  x=1, y=0, label=expression(bolditalic(paste(rho, "= 0.680  p < 0.001"))),size=sig.sz, hjust = 0);Chl_M4.pred.plot
 
 ```
 
@@ -607,7 +607,7 @@ M1_Sym_predict<-data.frame(Predicted=predict(Sym_W2.glm, newdata=data.frame(Scor
 M1_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M1")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M1_Sym_predict$Predicted, M1_Sym_predict$Measured, method="spearman")
+cor.test(M1_Sym_predict$Predicted, M1_Sym_predict$Measured, method="pearson")
 
 ```
 
@@ -627,7 +627,7 @@ Sym_M1.pred.plot<-ggplot(M1_Sym_predict, aes(x=Predicted, y=Measured))+
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-   annotate("text",  x=0.6, y=0, label=expression(bolditalic(paste(rho, "= 0.819  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M1.pred.plot
+   annotate("text",  x=0.6, y=0, label=expression(bolditalic(paste(rho, "= 0.754  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M1.pred.plot
 
 ```
 
@@ -641,11 +641,11 @@ M4_Sym_predict<-data.frame(Predicted=predict(Sym_W2.glm, newdata=data.frame(Scor
 M4_Sym_predict$Measured<-FullData$Sym10.6_cm2[which(FullData$TimeP=="M4")]
 
 ##Test correlation between Predicted and Measured values
-cor.test(M4_Sym_predict$Predicted, M4_Sym_predict$Measured, method="spearman")
+cor.test(M4_Sym_predict$Predicted, M4_Sym_predict$Measured, method="pearson")
 
 ```
 
-The measured values of Winter Symbiont Density are significantly (p < 0.001) correlated with those predicted from Color Score using the model developed in Summer 1.
+The measured values of Winter Symbiont Density are significantly (p < 0.05) correlated with those predicted from Color Score using the model developed in Summer 1.
 
 
 #### Plot Predicted vs Measured
@@ -661,7 +661,7 @@ Sym_M4.pred.plot<-ggplot(M4_Sym_predict, aes(x=Predicted, y=Measured))+
         axis.text.x=element_text(size=axis.txt.sz, colour="black"),
         axis.text.y=element_text(size=axis.txt.sz, colour="black"),
         plot.title = element_text(size = plot.title.sz, colour="black", hjust = 0.5))+
-   annotate("text",  x=0.5, y=0, label=expression(bolditalic(paste(rho, "= 0.343  p < 0.001"))),size=sig.sz, hjust = 0);Sym_M4.pred.plot
+   annotate("text",  x=0.5, y=0, label=expression(bolditalic(paste(rho, "= 0.345  p < 0.05"))),size=sig.sz, hjust = 0);Sym_M4.pred.plot
 
 ```
 
